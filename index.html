@@ -8,7 +8,7 @@
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #1a0a2e;
+    background: linear-gradient(135deg, #8B2E3D 0%, #5a1a2a 25%, #3d0f1a 50%, #2a0a0f 75%, #1a0508 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -69,7 +69,7 @@
   .slot.filled { border-color: #ffb7d5; }
   #dialog-box {
     position: absolute;
-    bottom: 80px;
+    bottom: 120px;
     left: 50%;
     transform: translateX(-50%);
     background: #1a0a2e;
@@ -154,6 +154,9 @@
     border-radius: 4px;
     letter-spacing: 1px;
     transition: background 0.2s, transform 0.1s;
+    pointer-events: auto;
+    position: relative;
+    z-index: 30;
   }
   #restart-btn:hover { background: #ffb7d5; transform: scale(1.05); }
   #notification {
@@ -211,13 +214,50 @@
     letter-spacing: 1px;
   }
   #start-btn:hover { background: #ff6fa822; }
+  #touch-controls {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    gap: 8px;
+    z-index: 25;
+    pointer-events: auto;
+  }
+  #touch-controls.show { display: flex; flex-direction: column; }
+  .touch-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+  .touch-btn {
+    width: 50px;
+    height: 50px;
+    background: #ff6fa8;
+    border: 2px solid #ffb7d5;
+    border-radius: 4px;
+    color: #1a0a2e;
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s, transform 0.1s;
+    pointer-events: auto;
+    position: relative;
+    z-index: 26;
+  }
+  .touch-btn:active { background: #ffb7d5; transform: scale(0.95); }
+  .touch-btn.center { width: 40px; height: 40px; margin: 0 auto; }
 </style>
 </head>
 <body>
 <div id="game-wrapper">
   <div id="title-bar">✨ PIXEL ADVENTURE — PETUALANGAN SPESIAL ✨</div>
   <div style="position:relative;">
-    <canvas id="canvas" width="512" height="384"></canvas>
+    <canvas id="canvas" width="768" height="576"></canvas>
     <div id="dialog-box">
       <div id="dialog-name"></div>
       <div id="dialog-text"></div>
@@ -249,6 +289,19 @@
     <div class="hud-item">❤️ <span id="steps">0</span> langkah</div>
   </div>
   <div id="controls-hint">WASD / ARROW = gerak &nbsp;|&nbsp; Z / ENTER = bicara & ambil</div>
+  <div id="touch-controls">
+    <div class="touch-row">
+      <button class="touch-btn" data-dir="up">▲</button>
+    </div>
+    <div class="touch-row">
+      <button class="touch-btn" data-dir="left">◄</button>
+      <button class="touch-btn center" data-action="action">◉</button>
+      <button class="touch-btn" data-dir="right">►</button>
+    </div>
+    <div class="touch-row">
+      <button class="touch-btn" data-dir="down">▼</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -257,7 +310,7 @@ const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
 const TILE = 32;
-const COLS = 16, ROWS = 12;
+const COLS = 24, ROWS = 18;
 
 // Warna palette
 const C = {
@@ -273,22 +326,28 @@ const C = {
 
 // MAP: 0=grass, 1=path, 2=water, 3=tree, 4=house, 5=wall, 6=flower, 7=sand, 8=rock, 9=sign
 const MAP = [
-  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,3],
-  [3,0,4,4,0,1,0,3,0,0,0,4,4,0,0,3],
-  [3,0,4,4,0,1,0,0,6,6,0,4,4,0,0,3],
-  [3,0,0,0,0,1,0,0,6,0,0,0,0,0,0,3],
-  [3,1,1,1,1,1,1,1,1,1,1,1,1,1,0,3],
-  [3,0,6,0,0,1,0,0,0,0,0,0,6,0,3,3],
-  [3,0,0,0,0,1,0,3,0,9,0,0,0,0,0,3],
-  [3,0,4,4,0,1,0,0,0,0,0,4,4,0,0,3],
-  [3,0,4,4,0,1,0,0,2,2,0,4,4,0,0,3],
-  [3,0,0,0,0,1,0,0,2,2,0,0,0,0,0,3],
-  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,3,0,0,0,0,0,4,4,0,0,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,0,6,6,0,0,0,4,4,0,0,3,0,0,0,0,0,3],
+  [3,0,0,0,0,1,0,0,6,6,0,0,0,0,0,0,0,0,0,6,0,0,0,3],
+  [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,3],
+  [3,0,6,0,0,1,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,3,3],
+  [3,0,0,0,0,1,0,3,0,0,0,9,0,0,0,0,0,0,0,3,0,0,0,3],
+  [3,0,4,4,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [3,0,0,0,0,1,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,3],
+  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,0,6,0,0,0,0,0,0,0,3,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3],
+  [3,0,6,0,0,1,0,0,2,2,0,0,0,6,0,3,0,0,0,0,0,0,0,3],
+  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
 ];
 
 const SOLID = [2, 3, 5, 8];
-const HOUSE_TILES = [[2,2],[2,3],[3,2],[3,3],[2,11],[2,12],[3,11],[3,12],[8,2],[8,3],[9,2],[9,3],[8,11],[8,12],[9,11],[9,12]];
+const HOUSE_TILES = [[2,2],[2,3],[3,2],[3,3],[2,13],[2,14],[3,13],[3,14],[8,2],[8,3],[9,2],[9,3],[8,13],[8,14],[9,13],[9,14],[2,21],[2,22],[3,21],[3,22]];
 
 function isSolid(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS) return true;
@@ -302,10 +361,10 @@ function isSolid(tx, ty) {
 
 // Items di map [x tile, y tile, emoji, name, collected]
 let items = [
-  { tx: 8, ty: 3, emoji: '⭐', name: 'Bintang Ajaib', collected: false },
-  { tx: 12, ty: 6, emoji: '🌸', name: 'Bunga Sakura', collected: false },
+  { tx: 9, ty: 3, emoji: '⭐', name: 'Bintang Ajaib', collected: false },
+  { tx: 15, ty: 6, emoji: '🌸', name: 'Bunga Sakura', collected: false },
   { tx: 2, ty: 6, emoji: '💎', name: 'Kristal Biru', collected: false },
-  { tx: 5, ty: 7, emoji: '🍰', name: 'Kue Spesial', collected: false },
+  { tx: 19, ty: 4, emoji: '🍰', name: 'Kue Spesial', collected: false },
 ];
 
 // NPC data
@@ -320,7 +379,7 @@ const NPCS = [
     dIdx: 0
   },
   {
-    tx: 12, ty: 2, emoji: '🐰', name: 'Kelinci Mochi',
+    tx: 13, ty: 2, emoji: '🐰', name: 'Kelinci Mochi',
     dialogs: [
       "Hiii! Aku Mochi! Suka banget makan wortel~ 🥕",
       "Ada bintang jatuh tadi pagi di sekitar sini lho!",
@@ -329,7 +388,7 @@ const NPCS = [
     dIdx: 0
   },
   {
-    tx: 7, ty: 7, emoji: '🧙', name: 'Penyihir Tua',
+    tx: 17, ty: 3, emoji: '🧙', name: 'Penyihir Tua',
     dialogs: [
       "Hohoho~ Selamat datang, petualang muda!",
       "Kumpulkan 4 item ajaib, lalu ke papan tanda di timur...",
@@ -338,7 +397,7 @@ const NPCS = [
     dIdx: 0
   },
   {
-    tx: 12, ty: 9, emoji: '🦊', name: 'Rubah Kira',
+    tx: 19, ty: 13, emoji: '🦊', name: 'Rubah Kira',
     dialogs: [
       "Kyun~ Hai hai! Aku Kira, rubah cantik dari hutan timur!",
       "Kamu udah ngumpulin berapa item? Aku yakin kamu bisa dapetin semua!",
@@ -348,7 +407,7 @@ const NPCS = [
   },
 ];
 
-let player = { tx: 5, ty: 5, px: 5*TILE, py: 5*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
+let player = { tx: 12, ty: 11, px: 12*TILE, py: 11*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
 let score = 0, steps = 0;
 let dialogActive = false, dialogNPC = null, dialogIdx = 0;
 let notifTimer = 0;
@@ -365,8 +424,57 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
+// Touch controls
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.touch-btn').forEach(btn => {
+    let isPressed = false;
+
+    const handleStart = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isPressed = true;
+      const dir = btn.dataset.dir;
+      const action = btn.dataset.action;
+      if (dir) {
+        keys[dir] = true;
+      }
+      if (action === 'action' && !endShown) {
+        handleAction();
+      }
+      btn.style.background = '#ffb7d5';
+      btn.style.transform = 'scale(0.95)';
+    };
+
+    const handleEnd = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isPressed = false;
+      const dir = btn.dataset.dir;
+      if (dir) {
+        keys[dir] = false;
+      }
+      btn.style.background = '#ff6fa8';
+      btn.style.transform = 'scale(1)';
+    };
+
+    // Touch events
+    btn.addEventListener('touchstart', handleStart, { passive: false });
+    btn.addEventListener('touchend', handleEnd, { passive: false });
+    btn.addEventListener('touchcancel', handleEnd, { passive: false });
+
+    // Mouse events (for desktop testing)
+    btn.addEventListener('mousedown', handleStart);
+    btn.addEventListener('mouseup', handleEnd);
+    btn.addEventListener('mouseleave', handleEnd);
+  });
+});
+
 function startGame() {
   document.getElementById('start-screen').style.display = 'none';
+  const touchControls = document.getElementById('touch-controls');
+  touchControls.classList.add('show');
+  touchControls.style.display = 'flex';
+  touchControls.style.pointerEvents = 'auto';
   gameStarted = true;
   buildSlots();
   loop();
@@ -427,7 +535,7 @@ function handleAction() {
     }
   }
   // Cek sign
-  if (Math.abs(9 - player.tx) + Math.abs(7 - player.ty) <= 1.5) {
+  if (Math.abs(11 - player.tx) + Math.abs(7 - player.ty) <= 1.5) {
     const allCollected = items.every(i => i.collected);
     if (allCollected) {
       showEnding();
@@ -486,6 +594,19 @@ function showEnding() {
      Sekarang dan selamanya. ✨<br><br>
      — dari yang selalu sayang kamu 🐱`;
   es.classList.add('show');
+
+  // Sembunyikan touch controls saat end screen muncul
+  document.getElementById('touch-controls').style.display = 'none';
+
+  // Pastikan restart button bisa diklik
+  const restartBtn = document.getElementById('restart-btn');
+  restartBtn.style.pointerEvents = 'auto';
+  restartBtn.onclick = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    restartGame();
+  };
+
   score += 500;
   document.getElementById('score').textContent = score;
 }
@@ -493,7 +614,7 @@ function showEnding() {
 function restartGame() {
   items.forEach(i => i.collected = false);
   NPCS.forEach(n => n.dIdx = 0);
-  player = { tx: 5, ty: 5, px: 5*TILE, py: 5*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
+  player = { tx: 12, ty: 11, px: 12*TILE, py: 11*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
   score = 0; steps = 0; endShown = false;
   dialogActive = false; dialogNPC = null;
   document.getElementById('dialog-box').style.display = 'none';
@@ -501,6 +622,12 @@ function restartGame() {
   document.getElementById('score').textContent = '0';
   document.getElementById('steps').textContent = '0';
   updateSlots();
+
+  // Pastikan touch controls muncul kembali
+  const touchControls = document.getElementById('touch-controls');
+  touchControls.classList.add('show');
+  touchControls.style.display = 'flex';
+  touchControls.style.pointerEvents = 'auto';
 }
 
 let lastTime = 0;
@@ -718,7 +845,7 @@ function render() {
   }
 
   // Draw houses
-  const housePairs = [[2,2],[2,11],[8,2],[8,11]];
+  const housePairs = [[2,2],[2,13],[8,2],[8,13],[21,2]];
   for (const [hr, hc] of housePairs) {
     drawHouse(hc, hr);
   }
