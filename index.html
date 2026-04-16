@@ -2,952 +2,827 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>✨ Pixel Adventure — Petualangan Spesial</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>✨ Pixel Adventure</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: linear-gradient(135deg, #8B2E3D 0%, #5a1a2a 25%, #3d0f1a 50%, #2a0a0f 75%, #1a0508 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    font-family: 'Press Start 2P', monospace;
-    overflow: hidden;
-  }
-  #game-wrapper {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
-  #title-bar {
-    color: #ffb7d5;
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px #ff6fa8;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
-  #canvas {
-    border: 3px solid #ff6fa8;
-    box-shadow: 0 0 30px #ff6fa855, 0 0 60px #9b59b622;
-    image-rendering: pixelated;
-    cursor: default;
-  }
-  #hud {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    width: 100%;
-    justify-content: space-between;
-    padding: 0 4px;
-  }
-  .hud-item {
-    color: #ffb7d5;
-    font-size: 7px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  #item-slots {
-    display: flex;
-    gap: 4px;
-  }
-  .slot {
-    width: 20px; height: 20px;
-    border: 2px solid #ff6fa855;
-    border-radius: 3px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px;
-    background: #2a0a3e;
-    transition: border-color 0.2s;
-  }
-  .slot.filled { border-color: #ffb7d5; }
-  #dialog-box {
-    position: absolute;
-    bottom: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1a0a2e;
-    border: 3px solid #ff6fa8;
-    border-radius: 6px;
-    padding: 14px 18px;
-    width: 520px;
-    max-width: 96vw;
-    display: none;
-    box-shadow: 0 0 20px #ff6fa855;
-    z-index: 10;
-  }
-  #dialog-name {
-    color: #ffb7d5;
-    font-size: 8px;
-    margin-bottom: 8px;
-    text-shadow: 0 0 8px #ff6fa8;
-  }
-  #dialog-text {
-    color: #fff;
-    font-size: 7px;
-    line-height: 1.9;
-    min-height: 40px;
-  }
-  #dialog-prompt {
-    color: #ff6fa8;
-    font-size: 6px;
-    text-align: right;
-    margin-top: 8px;
-    animation: pulse 1s infinite;
-  }
-  #controls-hint {
-    color: #ffffff44;
-    font-size: 6px;
-    text-align: center;
-    letter-spacing: 1px;
-  }
-  #end-screen {
-    display: none;
-    position: absolute;
-    inset: 0;
-    background: #1a0a2eee;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    border-radius: 4px;
-    z-index: 20;
-    padding: 30px;
-    text-align: center;
-  }
-  #end-screen.show { display: flex; }
-  #end-title {
-    color: #ffb7d5;
-    font-size: 13px;
-    text-shadow: 0 0 20px #ff6fa8;
-    animation: pulse 1.5s infinite;
-  }
-  #end-message {
-    color: #fff;
-    font-size: 7px;
-    line-height: 2.2;
-    max-width: 400px;
-    border: 2px solid #ff6fa855;
-    border-radius: 6px;
-    padding: 16px 20px;
-    background: #2a0a3e88;
-  }
-  #end-hearts {
-    font-size: 20px;
-    animation: floatHeart 2s infinite;
-  }
-  @keyframes floatHeart { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-  #restart-btn {
-    background: #ff6fa8;
-    color: #1a0a2e;
-    border: none;
-    padding: 10px 20px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 7px;
-    cursor: pointer;
-    border-radius: 4px;
-    letter-spacing: 1px;
-    transition: background 0.2s, transform 0.1s;
-    pointer-events: auto;
-    position: relative;
-    z-index: 30;
-  }
-  #restart-btn:hover { background: #ffb7d5; transform: scale(1.05); }
-  #notification {
-    position: absolute;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #ff6fa8;
-    color: #1a0a2e;
-    font-size: 7px;
-    padding: 8px 14px;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 15;
-  }
-  #notification.show { opacity: 1; }
-  #start-screen {
-    display: flex;
-    position: absolute;
-    inset: 0;
-    background: #1a0a2ef0;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    z-index: 30;
-    border-radius: 4px;
-  }
-  #start-title {
-    color: #ffb7d5;
-    font-size: 11px;
-    text-shadow: 0 0 20px #ff6fa8;
-    text-align: center;
-    line-height: 2;
-  }
-  #start-sub {
-    color: #fff8;
-    font-size: 6px;
-    text-align: center;
-    line-height: 2.2;
-  }
-  #start-btn {
-    background: transparent;
-    color: #ff6fa8;
-    border: 2px solid #ff6fa8;
-    padding: 10px 24px;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 8px;
-    cursor: pointer;
-    border-radius: 4px;
-    animation: pulse 1.5s infinite;
-    letter-spacing: 1px;
-  }
-  #start-btn:hover { background: #ff6fa822; }
-  #touch-controls {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    gap: 8px;
-    z-index: 1000;
-    pointer-events: none;
-    opacity: 0.7;
-    flex-direction: column;
-  }
-  #touch-controls.show {
-    display: flex;
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .touch-row {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-  }
-  .touch-btn {
-    width: 50px;
-    height: 50px;
-    background: #ff6fa8;
-    border: 2px solid #ffb7d5;
-    border-radius: 4px;
-    color: #1a0a2e;
-    font-size: 20px;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.1s, transform 0.1s;
-    pointer-events: auto;
-    position: relative;
-    z-index: 26;
-  }
-  .touch-btn:active { background: #ffb7d5; transform: scale(0.95); }
-  .touch-btn.center { width: 40px; height: 40px; margin: 0 auto; }
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --pink: #ff6fa8;
+  --pink-light: #ffb7d5;
+  --pink-dark: #c2185b;
+  --maroon: #6d0022;
+  --maroon-dark: #3d000f;
+  --bg1: #ff6fa8;
+  --bg2: #c2185b;
+  --bg3: #6d0022;
+  --bg4: #3a000f;
+  --glass: rgba(30,0,15,0.55);
+  --glass-border: rgba(255,111,168,0.35);
+  --text: #fff;
+  --text-dim: rgba(255,183,213,0.7);
+  --pixel: 'Press Start 2P', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width:100%; height:100%;
+  background: linear-gradient(155deg, var(--bg1) 0%, var(--bg2) 30%, var(--bg3) 65%, var(--bg4) 100%);
+  background-attachment: fixed;
+  font-family: var(--pixel);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+}
+
+/* ── Animated stars background ── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px),
+    radial-gradient(circle, rgba(255,183,213,0.6) 1px, transparent 1px);
+  background-size: 120px 120px, 80px 80px;
+  background-position: 0 0, 40px 40px;
+  opacity:.18;
+  animation: starDrift 20s linear infinite;
+  pointer-events:none;
+  z-index:0;
+}
+@keyframes starDrift { to { background-position: 120px 120px, 160px 160px; } }
+
+/* ── Layout ── */
+#root {
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  min-height:100vh;
+  padding:16px 8px 28px;
+  gap:12px;
+}
+
+/* ── Title ── */
+#title-bar {
+  font-size:9px;
+  letter-spacing:2px;
+  color: var(--pink-light);
+  text-shadow: 0 0 12px var(--pink), 0 0 24px var(--pink-dark);
+  animation: pulse 2.4s ease-in-out infinite;
+  text-align:center;
+  line-height:1.8;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.65} }
+
+/* ── Game Panel ── */
+#game-panel {
+  position:relative;
+  border-radius:10px;
+  overflow:hidden;
+  border: 2.5px solid var(--glass-border);
+  box-shadow:
+    0 0 0 1px rgba(255,111,168,.15),
+    0 0 30px rgba(255,111,168,.35),
+    0 0 70px rgba(194,24,91,.2),
+    inset 0 0 30px rgba(0,0,0,.25);
+}
+#canvas {
+  display:block;
+  image-rendering:pixelated;
+  width: min(768px, 98vw);
+  height: auto;
+}
+
+/* ── Overlays inside game-panel ── */
+#notification {
+  position:absolute; top:14px; left:50%; transform:translateX(-50%);
+  background: linear-gradient(90deg, var(--pink-dark), var(--pink));
+  color:#fff;
+  font-size:6px;
+  padding:7px 14px;
+  border-radius:4px;
+  box-shadow: 0 2px 12px rgba(255,111,168,.5);
+  opacity:0; transition:opacity .3s;
+  pointer-events:none;
+  white-space:nowrap;
+  z-index:15;
+}
+#notification.show { opacity:1; }
+
+#dialog-box {
+  position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+  width:calc(100% - 28px);
+  background: rgba(20,2,14,.92);
+  border:2.5px solid var(--pink);
+  border-radius:8px;
+  padding:14px 16px 10px;
+  display:none;
+  box-shadow: 0 0 24px rgba(255,111,168,.45);
+  z-index:10;
+  backdrop-filter:blur(4px);
+}
+#dialog-name {
+  color:var(--pink-light);
+  font-size:7px;
+  margin-bottom:8px;
+  text-shadow:0 0 8px var(--pink);
+}
+#dialog-text {
+  color:#fff;
+  font-size:6.5px;
+  line-height:1.95;
+  min-height:36px;
+}
+#dialog-prompt {
+  color:var(--pink);
+  font-size:5.5px;
+  text-align:right;
+  margin-top:8px;
+  animation:pulse 1s infinite;
+}
+
+/* Start screen */
+#start-screen {
+  position:absolute; inset:0;
+  background: rgba(15,0,10,.92);
+  backdrop-filter:blur(2px);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:18px; z-index:30; border-radius:8px;
+  text-align:center; padding:24px;
+}
+#start-title {
+  color:var(--pink-light); font-size:10px;
+  text-shadow:0 0 20px var(--pink);
+  line-height:2;
+}
+#start-sub {
+  color:rgba(255,255,255,.65);
+  font-size:5.5px;
+  line-height:2.3;
+}
+#start-btn {
+  background:transparent; color:var(--pink);
+  border:2px solid var(--pink);
+  padding:10px 26px;
+  font-family:var(--pixel); font-size:8px;
+  cursor:pointer; border-radius:5px;
+  animation:pulse 1.6s infinite;
+  letter-spacing:1px;
+  transition:background .2s;
+}
+#start-btn:hover, #start-btn:active { background:rgba(255,111,168,.18); }
+
+/* End screen */
+#end-screen {
+  display:none; position:absolute; inset:0;
+  background:rgba(15,0,10,.93);
+  backdrop-filter:blur(3px);
+  flex-direction:column; align-items:center;
+  justify-content:center; gap:16px;
+  border-radius:8px; z-index:20;
+  padding:24px; text-align:center;
+  overflow-y:auto;
+}
+#end-screen.show { display:flex; }
+.end-hearts { font-size:22px; animation:floatHeart 2s ease-in-out infinite; }
+@keyframes floatHeart { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+#end-title {
+  color:var(--pink-light); font-size:11px;
+  text-shadow:0 0 20px var(--pink);
+  animation:pulse 1.5s infinite;
+}
+#end-message {
+  color:#fff; font-size:6.5px; line-height:2.2;
+  max-width:380px;
+  border:1.5px solid rgba(255,111,168,.4);
+  border-radius:8px; padding:16px 20px;
+  background:rgba(255,111,168,.08);
+}
+#restart-btn {
+  background:linear-gradient(135deg, var(--pink), var(--pink-dark));
+  color:#fff; border:none;
+  padding:11px 22px;
+  font-family:var(--pixel); font-size:7px;
+  cursor:pointer; border-radius:5px;
+  letter-spacing:1px;
+  box-shadow:0 4px 16px rgba(255,111,168,.4);
+  transition:transform .15s, box-shadow .15s;
+}
+#restart-btn:hover, #restart-btn:active {
+  transform:scale(1.05);
+  box-shadow:0 6px 22px rgba(255,111,168,.6);
+}
+
+/* ── HUD bar ── */
+#hud {
+  width: min(768px, 98vw);
+  display:flex; align-items:center;
+  justify-content:space-between;
+  padding:8px 14px;
+  background:var(--glass);
+  border:1.5px solid var(--glass-border);
+  border-radius:8px;
+  backdrop-filter:blur(6px);
+  box-shadow:0 2px 14px rgba(0,0,0,.3);
+}
+.hud-item {
+  color:var(--pink-light);
+  font-size:6px;
+  display:flex; align-items:center; gap:6px;
+}
+#item-slots { display:flex; gap:5px; }
+.slot {
+  width:22px; height:22px;
+  border:1.5px solid rgba(255,111,168,.35);
+  border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px;
+  background:rgba(30,0,20,.6);
+  transition:border-color .25s, box-shadow .25s;
+}
+.slot.filled {
+  border-color:var(--pink-light);
+  box-shadow:0 0 8px rgba(255,183,213,.4);
+}
+
+/* ── Controls row ── */
+#controls-row {
+  width: min(768px, 98vw);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:6px 12px;
+}
+
+/* ── D-Pad ── */
+#dpad {
+  display:grid;
+  grid-template-columns: repeat(3, 54px);
+  grid-template-rows: repeat(3, 54px);
+  gap:4px;
+  user-select:none; -webkit-user-select:none;
+}
+.dpad-btn {
+  width:54px; height:54px;
+  background:var(--glass);
+  border:2px solid var(--glass-border);
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; color:var(--pink-light);
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .08s, transform .06s, border-color .1s, box-shadow .1s;
+  box-shadow:0 4px 12px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.dpad-btn:active, .dpad-btn.active {
+  background:rgba(255,111,168,.28);
+  border-color:var(--pink);
+  transform:scale(.9);
+  box-shadow:0 0 14px rgba(255,111,168,.5);
+}
+.dpad-center {
+  width:54px; height:54px;
+  background:rgba(255,111,168,.06);
+  border:2px solid rgba(255,111,168,.1);
+  border-radius:10px;
+}
+/* Grid positions */
+#btn-up    { grid-column:2; grid-row:1; }
+#dpad-mid  { grid-column:1 / span 3; grid-row:2; display:contents; }
+#btn-left  { grid-column:1; grid-row:2; }
+.dpad-center { grid-column:2; grid-row:2; }
+#btn-right { grid-column:3; grid-row:2; }
+#btn-down  { grid-column:2; grid-row:3; }
+
+/* ── Action buttons (right side) ── */
+#action-area {
+  display:flex; flex-direction:column;
+  align-items:center; gap:10px;
+}
+#action-btn {
+  width:66px; height:66px;
+  background:linear-gradient(145deg, var(--pink), var(--pink-dark));
+  border:none; border-radius:50%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  color:#fff; font-family:var(--pixel);
+  font-size:8px; line-height:1.5;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 5px 20px rgba(255,111,168,.55), inset 0 1px 0 rgba(255,255,255,.2);
+  transition:transform .08s, box-shadow .1s;
+  text-align:center;
+}
+#action-btn span { font-size:5.5px; opacity:.8; margin-top:1px; }
+#action-btn:active {
+  transform:scale(.88);
+  box-shadow:0 2px 10px rgba(255,111,168,.4);
+}
+#controls-hint {
+  color:rgba(255,183,213,.45);
+  font-size:5px;
+  text-align:center;
+  letter-spacing:1px;
+  line-height:2;
+}
 </style>
 </head>
 <body>
-<div id="game-wrapper">
-  <div id="title-bar">✨ PIXEL ADVENTURE — PETUALANGAN SPESIAL ✨</div>
-  <div style="position:relative;">
+<div id="root">
+
+  <div id="title-bar">✨ PIXEL ADVENTURE ✨<br>— PETUALANGAN SPESIAL —</div>
+
+  <!-- Game Canvas Panel -->
+  <div id="game-panel">
     <canvas id="canvas" width="768" height="576"></canvas>
+    <div id="notification"></div>
     <div id="dialog-box">
       <div id="dialog-name"></div>
       <div id="dialog-text"></div>
-      <div id="dialog-prompt">[ TEKAN Z / ENTER untuk lanjut ]</div>
+      <div id="dialog-prompt">[ Z / ENTER / Tombol ◉ untuk lanjut ]</div>
     </div>
-    <div id="notification"></div>
-    <div id="end-screen">
-      <div id="end-hearts">💖 💖 💖</div>
-      <div id="end-title">SELAMAT! ✨</div>
-      <div id="end-message"></div>
-      <div id="end-hearts">🌸 🌟 🌸</div>
-      <button id="restart-btn" onclick="restartGame()">▶ Main Lagi</button>
-    </div>
-    <div id="start-screen" id="start-screen">
+    <!-- Start Screen -->
+    <div id="start-screen">
       <div id="start-title">✨ PIXEL ADVENTURE ✨<br>Petualangan Spesial</div>
       <div id="start-sub">
-        Jelajahi dunia pixel yang ajaib!<br>
+        Jelajahi dunia pixel yang ajaib! 🌸<br>
         Bicara dengan NPC, kumpulkan item,<br>
-        dan temukan pesan spesial untukmu~ 🌸<br><br>
-        WASD / Arrow = Jalan<br>
-        Z / Enter = Bicara / Ambil
+        dan temukan pesan spesial untukmu~<br><br>
+        WASD / Arrow Keys = Jalan<br>
+        Z / Enter / ◉ = Bicara &amp; Ambil
       </div>
       <button id="start-btn" onclick="startGame()">▶ MULAI PETUALANGAN</button>
     </div>
+    <!-- End Screen -->
+    <div id="end-screen">
+      <div class="end-hearts">💖 💖 💖</div>
+      <div id="end-title">SELAMAT! ✨</div>
+      <div id="end-message"></div>
+      <div class="end-hearts">🌸 🌟 🌸</div>
+      <button id="restart-btn" onclick="restartGame()">▶ Main Lagi</button>
+    </div>
   </div>
+
+  <!-- HUD -->
   <div id="hud">
-    <div class="hud-item">🌸 ITEM: <div id="item-slots"></div></div>
+    <div class="hud-item">🌸 <div id="item-slots"></div></div>
     <div class="hud-item">⭐ <span id="score">0</span></div>
-    <div class="hud-item">❤️ <span id="steps">0</span> langkah</div>
+    <div class="hud-item">👣 <span id="steps">0</span></div>
   </div>
-  <div id="controls-hint">WASD / ARROW = gerak &nbsp;|&nbsp; Z / ENTER = bicara & ambil</div>
-  <div id="touch-controls">
-    <div class="touch-row">
-      <button class="touch-btn" data-dir="up">▲</button>
+
+  <!-- Controls Row: D-Pad + Action -->
+  <div id="controls-row">
+
+    <!-- D-Pad -->
+    <div id="dpad">
+      <div class="dpad-btn" id="btn-up">▲</div>
+      <div class="dpad-btn" id="btn-left">◀</div>
+      <div class="dpad-center"></div>
+      <div class="dpad-btn" id="btn-right">▶</div>
+      <div class="dpad-btn" id="btn-down">▼</div>
     </div>
-    <div class="touch-row">
-      <button class="touch-btn" data-dir="left">◄</button>
-      <button class="touch-btn center" data-action="action">◉</button>
-      <button class="touch-btn" data-dir="right">►</button>
+
+    <!-- Action + hint -->
+    <div id="action-area">
+      <button id="action-btn" onclick="handleAction()">◉<span>BICARA</span></button>
+      <div id="controls-hint">WASD/↑↓←→ = Gerak<br>Z / Enter = Aksi</div>
     </div>
-    <div class="touch-row">
-      <button class="touch-btn" data-dir="down">▼</button>
-    </div>
+
   </div>
-</div>
+</div><!-- #root -->
 
 <script>
+// ─────────────────────────────────────────────
+//  CANVAS & CTX
+// ─────────────────────────────────────────────
 const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+const ctx    = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-const TILE = 32;
-const COLS = 24, ROWS = 18;
+const TILE = 48;
+const COLS = 16, ROWS = 12;
 
-// Warna palette
+// ─────────────────────────────────────────────
+//  COLOR PALETTE
+// ─────────────────────────────────────────────
 const C = {
-  grass: '#4a9e4a', grass2: '#3d8a3d', dirt: '#8B6914', path: '#c8a86e',
-  water: '#3b8bd8', water2: '#2a7bc8', sand: '#e8d08a',
-  wood: '#8B5E3C', roof: '#c84040', roof2: '#a83030',
-  wall: '#d4b896', stone: '#888', flower: '#ff88cc',
-  tree: '#2d6e2d', trunk: '#6b3e1e',
-  pink: '#ff6fa8', lightpink: '#ffb7d5', purple: '#9b59b6',
-  yellow: '#ffd700', white: '#fff', black: '#1a0a2e',
-  door: '#6b3e1e', window: '#88bbff'
+  grass:'#4a9e4a', grass2:'#3d8a3d',
+  path:'#c8a86e', path2:'#b8986e',
+  water:'#3b8bd8', water2:'#2a7bc8',
+  wood:'#8B5E3C', roof:'#c84040', roof2:'#a83030',
+  wall:'#d4b896', stone:'#888',
+  flower:'#ff88cc', tree:'#2d6e2d', trunk:'#6b3e1e',
+  pink:'#ff6fa8', lightpink:'#ffb7d5',
+  yellow:'#ffd700', black:'#1a0a2e',
+  door:'#6b3e1e', win:'#88bbff'
 };
 
-// MAP: 0=grass, 1=path, 2=water, 3=tree, 4=house, 5=wall, 6=flower, 7=sand, 8=rock, 9=sign
+// ─────────────────────────────────────────────
+//  MAP  0=grass 1=path 2=water 3=tree
+//       4=house 6=flower 9=sign
+// ─────────────────────────────────────────────
 const MAP = [
-  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
-  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [3,0,4,4,0,1,0,3,0,0,0,0,0,4,4,0,0,0,0,0,0,0,0,3],
-  [3,0,4,4,0,1,0,0,6,6,0,0,0,4,4,0,0,3,0,0,0,0,0,3],
-  [3,0,0,0,0,1,0,0,6,6,0,0,0,0,0,0,0,0,0,6,0,0,0,3],
-  [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,3],
-  [3,0,6,0,0,1,0,0,0,0,0,0,0,0,0,6,0,0,0,0,0,0,3,3],
-  [3,0,0,0,0,1,0,3,0,0,0,9,0,0,0,0,0,0,0,3,0,0,0,3],
-  [3,0,4,4,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [3,0,4,4,0,1,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [3,0,0,0,0,1,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,3],
-  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [3,0,4,4,0,1,0,0,6,0,0,0,0,0,0,0,3,0,0,0,0,0,0,3],
-  [3,0,4,4,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3],
-  [3,0,6,0,0,1,0,0,2,2,0,0,0,6,0,3,0,0,0,0,0,0,0,3],
-  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,3,0,0,0,4,4,0,0,3],
+  [3,0,4,4,0,1,0,0,6,6,0,4,4,0,0,3],
+  [3,0,0,0,0,1,0,0,6,0,0,0,0,0,0,3],
+  [3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,3],
+  [3,0,6,0,0,1,0,0,0,0,0,0,6,0,3,3],
+  [3,0,0,0,0,1,0,3,0,9,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,0,0,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,0,2,2,0,3,4,0,0,3],
+  [3,0,0,0,0,1,0,0,2,2,0,0,0,0,0,3],
+  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
 ];
 
-const SOLID = [2, 3, 5, 8];
-const HOUSE_TILES = [[2,2],[2,3],[3,2],[3,3],[2,13],[2,14],[3,13],[3,14],[8,2],[8,3],[9,2],[9,3],[8,13],[8,14],[9,13],[9,14],[2,21],[2,22],[3,21],[3,22]];
+const SOLID      = [2,3,5,8];
+const HOUSE_TILES= [[2,2],[2,3],[3,2],[3,3],[2,11],[2,12],[3,11],[3,12],
+                    [8,2],[8,3],[9,2],[9,3],[8,11],[8,12],[9,11],[9,12]];
 
-function isSolid(tx, ty) {
-  if (tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS) return true;
-  const t = MAP[ty][tx];
-  if (SOLID.includes(t)) return true;
-  for (const [hr,hc] of HOUSE_TILES) {
-    if (ty === hr && tx === hc) return true;
-  }
+function isSolid(tx,ty){
+  if(tx<0||ty<0||tx>=COLS||ty>=ROWS) return true;
+  if(SOLID.includes(MAP[ty][tx])) return true;
+  for(const [hr,hc] of HOUSE_TILES) if(ty===hr&&tx===hc) return true;
   return false;
 }
 
-// Items di map [x tile, y tile, emoji, name, collected]
+// ─────────────────────────────────────────────
+//  ITEMS & NPCs
+// ─────────────────────────────────────────────
 let items = [
-  { tx: 9, ty: 3, emoji: '⭐', name: 'Bintang Ajaib', collected: false },
-  { tx: 15, ty: 6, emoji: '🌸', name: 'Bunga Sakura', collected: false },
-  { tx: 2, ty: 6, emoji: '💎', name: 'Kristal Biru', collected: false },
-  { tx: 19, ty: 4, emoji: '🍰', name: 'Kue Spesial', collected: false },
+  {tx:8, ty:3, emoji:'⭐', name:'Bintang Ajaib',  collected:false},
+  {tx:12,ty:6, emoji:'🌸', name:'Bunga Sakura',   collected:false},
+  {tx:2, ty:6, emoji:'💎', name:'Kristal Biru',   collected:false},
+  {tx:5, ty:7, emoji:'🍰', name:'Kue Spesial',    collected:false},
 ];
 
-// NPC data
 const NPCS = [
-  {
-    tx: 4, ty: 2, emoji: '🐱', name: 'Kucing Noel',
-    dialogs: [
-      "Nyaa~ Halo halo! Aku Noel si kucing ajaib!",
-      "Katanya ada item tersembunyi di taman bunga... coba deh cari! 🌸",
-      "Psst! Kumpulkan semua item buat dapetin pesan rahasia~ Nyaa!"
-    ],
-    dIdx: 0
-  },
-  {
-    tx: 13, ty: 2, emoji: '🐰', name: 'Kelinci Mochi',
-    dialogs: [
-      "Hiii! Aku Mochi! Suka banget makan wortel~ 🥕",
-      "Ada bintang jatuh tadi pagi di sekitar sini lho!",
-      "Kata kakek pohon, ada 4 item ajaib di dunia ini~ Kamu bisa kumpulkan semuanya?"
-    ],
-    dIdx: 0
-  },
-  {
-    tx: 17, ty: 3, emoji: '🧙', name: 'Penyihir Tua',
-    dialogs: [
-      "Hohoho~ Selamat datang, petualang muda!",
-      "Kumpulkan 4 item ajaib, lalu ke papan tanda di timur...",
-      "Di sana tersimpan pesan yang sangat... sangat spesial untukmu~ ✨"
-    ],
-    dIdx: 0
-  },
-  {
-    tx: 19, ty: 13, emoji: '🦊', name: 'Rubah Kira',
-    dialogs: [
-      "Kyun~ Hai hai! Aku Kira, rubah cantik dari hutan timur!",
-      "Kamu udah ngumpulin berapa item? Aku yakin kamu bisa dapetin semua!",
-      "Jangan lupa cek papan tanda kalau udah lengkap ya~ Uwu~ 🦊"
-    ],
-    dIdx: 0
-  },
+  { tx:4,  ty:2,  emoji:'🐱', name:'Kucing Noel', dIdx:0, dialogs:[
+      'Halo halo! Aku Noel si kucing ajaib!',
+      'Katanya ada item tersembunyi di taman bunga... coba deh! 🌸',
+      'Psst! Kumpulkan semua item buat dapetin pesan rahasia~ Nyaa!'
+  ]},
+  { tx:12, ty:2,  emoji:'🐰', name:'Kelinci Mochi', dIdx:0, dialogs:[
+      'Hiii! Aku Mochi! Suka banget makan wortel~ 🥕',
+      'Ada bintang jatuh tadi pagi di sekitar sini lho!',
+      'Kata kakek pohon ada 4 item ajaib di dunia ini~ Kamu bisa kumpulkan?'
+  ]},
+  { tx:7,  ty:7,  emoji:'🧙', name:'Penyihir Tua', dIdx:0, dialogs:[
+      'Hohoho~ Selamat datang, petualang muda!',
+      'Kumpulkan 4 item ajaib, lalu ke papan tanda di timur...',
+      'Di sana tersimpan pesan yang sangat... sangat spesial~ ✨'
+  ]},
+  { tx:12, ty:9,  emoji:'🦊', name:'Rubah Kira', dIdx:0, dialogs:[
+      'Kyun~ Hai hai! Aku Kira, rubah cantik dari hutan timur!',
+      'Kamu udah ngumpulin berapa item? Aku yakin kamu bisa!',
+      'Jangan lupa cek papan tanda kalau udah lengkap ya~ Uwu~ 🦊'
+  ]},
 ];
 
-let player = { tx: 12, ty: 11, px: 12*TILE, py: 11*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
-let score = 0, steps = 0;
-let dialogActive = false, dialogNPC = null, dialogIdx = 0;
-let notifTimer = 0;
-let gameStarted = false;
-let endShown = false;
+// ─────────────────────────────────────────────
+//  PLAYER STATE
+// ─────────────────────────────────────────────
+let player = {tx:5,ty:5, px:5*TILE,py:5*TILE, dir:'down', frame:0};
+let score=0, steps=0;
+let dialogActive=false, dialogNPC=null;
+let notifTimer=0;
+let gameStarted=false, endShown=false;
 
+// ─────────────────────────────────────────────
+//  KEYBOARD
+// ─────────────────────────────────────────────
 const keys = {};
-// HAPUS event listener lama dan GANTI dengan ini:
-window.addEventListener('keydown', (e) => {
-  if (!gameStarted) return;
-  
-  // Prevent default untuk arrow keys
-  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
+window.addEventListener('keydown', e => {
+  if(!gameStarted) return;
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  keys[e.key] = true;
+  if((e.key==='z'||e.key==='Z'||e.key==='Enter') && !endShown) handleAction();
+});
+window.addEventListener('keyup', e => { keys[e.key]=false; });
+
+// ─────────────────────────────────────────────
+//  D-PAD TOUCH CONTROLS
+// ─────────────────────────────────────────────
+const dirKey = {up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight'};
+
+function clearDirKeys(){ Object.values(dirKey).forEach(k=>keys[k]=false); }
+
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+  const dir = btn.id.replace('btn-','');
+
+  function press(e){
     e.preventDefault();
+    if(!gameStarted) return;
+    clearDirKeys();
+    keys[dirKey[dir]] = true;
+    document.querySelectorAll('.dpad-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
   }
-  
-  keys[e.key.toLowerCase()] = true;
-  keys[e.key] = true; // Simpan keduanya (case sensitive & insensitive)
-  
-  // Action key
-  if ((e.key.toLowerCase() === 'z' || e.key === 'Enter') && !endShown) {
+  function release(e){
     e.preventDefault();
-    handleAction();
+    clearDirKeys();
+    btn.classList.remove('active');
   }
+
+  btn.addEventListener('touchstart', press,   {passive:false});
+  btn.addEventListener('touchend',   release, {passive:false});
+  btn.addEventListener('touchcancel',release, {passive:false});
+  btn.addEventListener('mousedown',  press);
+  btn.addEventListener('mouseup',    release);
+  btn.addEventListener('mouseleave', release);
 });
 
-window.addEventListener('keyup', (e) => {
-  keys[e.key.toLowerCase()] = false;
-  keys[e.key] = false;
-});
-
-function initTouchControls() {
-  document.querySelectorAll('.touch-btn').forEach(btn => {
-    let isPressed = false;
-    let pressTimer = 0;
-    const REPEAT_DELAY = 200; // Delay pertama
-    const REPEAT_INTERVAL = 100; // Interval gerakan berulang
-
-    const handleStart = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      if (!gameStarted && btn.dataset.dir) return; // Hanya action button sebelum start
-      
-      isPressed = true;
-      pressTimer = REPEAT_DELAY;
-      
-      const dir = btn.dataset.dir;
-      const action = btn.dataset.action;
-      
-      if (dir && gameStarted) {
-        // Set direction key ON
-        keys[dir] = true;
-        // Langsung trigger 1 gerakan pertama
-        triggerMove(dir);
-      }
-      
-      if (action === 'action') {
-        if (!gameStarted) {
-          startGame();
-        } else if (!endShown) {
-          handleAction();
-        }
-      }
-      
-      // Visual feedback
-      btn.style.background = '#ffb7d5';
-      btn.style.transform = 'scale(0.95)';
-    };
-
-    const handleEnd = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      isPressed = false;
-      
-      const dir = btn.dataset.dir;
-      if (dir) {
-        keys[dir] = false;
-      }
-      
-      // Reset visual
-      btn.style.background = '#ff6fa8';
-      btn.style.transform = 'scale(1)';
-    };
-
-    // EVENT TOUCH
-    btn.addEventListener('touchstart', handleStart, { passive: false });
-    btn.addEventListener('touchend', handleEnd, { passive: false });
-    btn.addEventListener('touchcancel', handleEnd, { passive: false });
-    btn.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-
-    // EVENT MOUSE (untuk testing desktop)
-    btn.addEventListener('mousedown', handleStart);
-    btn.addEventListener('mouseup', handleEnd);
-    btn.addEventListener('mouseleave', handleEnd);
-    btn.addEventListener('mousemove', (e) => {
-      if (isPressed) e.preventDefault();
-    });
-
-    // Continuous movement loop untuk tombol ini
-    function updateTouchMovement() {
-      if (!isPressed || !btn.dataset.dir || !gameStarted) return;
-      
-      pressTimer -= 16; // ~60fps
-      
-      if (pressTimer <= 0) {
-        triggerMove(btn.dataset.dir);
-        pressTimer = REPEAT_INTERVAL;
-      }
-      
-      requestAnimationFrame(updateTouchMovement);
-    }
-    
-    // Mulai loop saat disentuh
-    btn.addEventListener('touchstart', () => {
-      if (btn.dataset.dir) updateTouchMovement();
-    }, { passive: false });
-    
-    btn.addEventListener('mousedown', () => {
-      if (btn.dataset.dir) updateTouchMovement();
-    });
-  });
-}
-
-// Initialize touch controls immediately
-initTouchControls();
-
-function startGame() {
-  document.getElementById('start-screen').style.display = 'none';
-  const touchControls = document.getElementById('touch-controls');
-  touchControls.classList.add('show');
-  touchControls.style.display = 'flex';
-  touchControls.style.pointerEvents = 'auto';
-  gameStarted = true;
+// ─────────────────────────────────────────────
+//  GAME FUNCTIONS
+// ─────────────────────────────────────────────
+function startGame(){
+  document.getElementById('start-screen').style.display='none';
+  gameStarted=true;
   buildSlots();
   loop();
 }
 
-function buildSlots() {
-  const s = document.getElementById('item-slots');
-  s.innerHTML = '';
-  items.forEach((it, i) => {
-    const d = document.createElement('div');
-    d.className = 'slot' + (it.collected ? ' filled' : '');
-    d.id = 'slot' + i;
-    d.textContent = it.collected ? it.emoji : '';
+function buildSlots(){
+  const s=document.getElementById('item-slots');
+  s.innerHTML='';
+  items.forEach((it,i)=>{
+    const d=document.createElement('div');
+    d.className='slot'+(it.collected?' filled':'');
+    d.id='slot'+i;
+    d.textContent=it.collected?it.emoji:'';
     s.appendChild(d);
   });
 }
-
-function updateSlots() {
-  items.forEach((it, i) => {
-    const d = document.getElementById('slot' + i);
-    if (d) {
-      d.className = 'slot' + (it.collected ? ' filled' : '');
-      d.textContent = it.collected ? it.emoji : '';
-    }
+function updateSlots(){
+  items.forEach((it,i)=>{
+    const d=document.getElementById('slot'+i);
+    if(!d) return;
+    d.className='slot'+(it.collected?' filled':'');
+    d.textContent=it.collected?it.emoji:'';
   });
 }
 
-function showNotif(msg) {
-  const n = document.getElementById('notification');
-  n.textContent = msg;
-  n.classList.add('show');
-  notifTimer = 120;
+function showNotif(msg){
+  const n=document.getElementById('notification');
+  n.textContent=msg; n.classList.add('show'); notifTimer=150;
 }
 
-function handleAction() {
-  if (dialogActive) {
-    advanceDialog();
-    return;
-  }
-  // Cek NPC di sekitar
-  for (const npc of NPCS) {
-    const dx = Math.abs(npc.tx - player.tx), dy = Math.abs(npc.ty - player.ty);
-    if (dx + dy <= 1.5) {
-      openDialog(npc);
-      return;
+function handleAction(){
+  if(dialogActive){ advanceDialog(); return; }
+  for(const npc of NPCS){
+    if(Math.abs(npc.tx-player.tx)+Math.abs(npc.ty-player.ty)<=1.5){
+      openDialog(npc); return;
     }
   }
-  // Cek item
-  for (const it of items) {
-    if (!it.collected && it.tx === player.tx && it.ty === player.ty) {
-      it.collected = true;
-      score += 100;
-      document.getElementById('score').textContent = score;
-      updateSlots();
-      showNotif('✨ Dapat ' + it.emoji + ' ' + it.name + '!');
-      checkWin();
-      return;
+  for(const it of items){
+    if(!it.collected&&it.tx===player.tx&&it.ty===player.ty){
+      collectItem(it); return;
     }
   }
-  // Cek sign
-  if (Math.abs(11 - player.tx) + Math.abs(7 - player.ty) <= 1.5) {
-    const allCollected = items.every(i => i.collected);
-    if (allCollected) {
-      showEnding();
-    } else {
-      const left = items.filter(i => !i.collected).length;
-      openSignDialog(left);
-    }
+  if(Math.abs(9-player.tx)+Math.abs(7-player.ty)<=1.5){
+    items.every(i=>i.collected) ? showEnding() : openSignDialog(items.filter(i=>!i.collected).length);
   }
 }
 
-function openSignDialog(left) {
-  dialogActive = true;
-  document.getElementById('dialog-box').style.display = 'block';
-  document.getElementById('dialog-name').textContent = '📋 Papan Tanda';
-  document.getElementById('dialog-text').textContent =
+function collectItem(it){
+  it.collected=true; score+=100;
+  document.getElementById('score').textContent=score;
+  updateSlots();
+  showNotif('✨ Dapat '+it.emoji+' '+it.name+'!');
+  if(items.every(i=>i.collected)) showNotif('🎉 Semua item terkumpul! Pergi ke papan tanda!');
+}
+
+function openSignDialog(left){
+  dialogActive=true;
+  document.getElementById('dialog-box').style.display='block';
+  document.getElementById('dialog-name').textContent='📋 Papan Tanda';
+  document.getElementById('dialog-text').textContent=
     `"Masih kurang ${left} item lagi... Kumpulkan semuanya dulu ya!" 🌸`;
-  dialogNPC = null;
+  dialogNPC=null;
+}
+function openDialog(npc){
+  dialogActive=true; dialogNPC=npc;
+  document.getElementById('dialog-box').style.display='block';
+  document.getElementById('dialog-name').textContent=npc.emoji+' '+npc.name;
+  document.getElementById('dialog-text').textContent=npc.dialogs[npc.dIdx];
+}
+function advanceDialog(){
+  if(dialogNPC) dialogNPC.dIdx=(dialogNPC.dIdx+1)%dialogNPC.dialogs.length;
+  dialogActive=false; dialogNPC=null;
+  document.getElementById('dialog-box').style.display='none';
 }
 
-function openDialog(npc) {
-  dialogActive = true;
-  dialogNPC = npc;
-  const db = document.getElementById('dialog-box');
-  db.style.display = 'block';
-  document.getElementById('dialog-name').textContent = npc.emoji + ' ' + npc.name;
-  document.getElementById('dialog-text').textContent = npc.dialogs[npc.dIdx];
-}
-
-function advanceDialog() {
-  if (dialogNPC) {
-    dialogNPC.dIdx = (dialogNPC.dIdx + 1) % dialogNPC.dialogs.length;
-  }
-  dialogActive = false;
-  dialogNPC = null;
-  document.getElementById('dialog-box').style.display = 'none';
-}
-
-function checkWin() {
-  if (items.every(i => i.collected)) {
-    showNotif('🎉 Semua item terkumpul! Pergi ke papan tanda!');
-  }
-}
-
-function showEnding() {
-  endShown = true;
-  const es = document.getElementById('end-screen');
-  // ⚙️ GANTI PESAN DI SINI SESUAI KEINGINAN KAMU:
-  document.getElementById('end-message').innerHTML =
+function showEnding(){
+  endShown=true;
+  // ✏️ GANTI PESAN DI SINI:
+  document.getElementById('end-message').innerHTML=
     `Selamat, petualang terhebat!<br><br>
      Makasih ya udah mau main game kecil ini...<br>
      Sama seperti kamu ngumpulin semua item ini,<br>
-     aku juga ngumpulin semua hal yg aku bisa buat kamu<br>
+     aku juga ngumpulin semua alasan<br>
      kenapa aku suka sama kamu. 💖<br><br>
      Dan jumlahnya? Nggak terhitung. 🌸<br><br>
      Kamu adalah petualangan favoritku.<br>
      Sekarang dan selamanya. ✨<br><br>
      — dari yang selalu sayang kamu 🐱`;
-  es.classList.add('show');
-
-  // Sembunyikan touch controls saat end screen muncul
-  const touchControls = document.getElementById('touch-controls');
-  touchControls.style.display = 'none';
-
-  // Pastikan restart button bisa diklik
-  const restartBtn = document.getElementById('restart-btn');
-  restartBtn.style.pointerEvents = 'auto';
-  restartBtn.onclick = function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    restartGame();
-  };
-
-  score += 500;
-  document.getElementById('score').textContent = score;
+  document.getElementById('end-screen').classList.add('show');
+  score+=500; document.getElementById('score').textContent=score;
 }
 
-function restartGame() {
-  items.forEach(i => i.collected = false);
-  NPCS.forEach(n => n.dIdx = 0);
-  player = { tx: 12, ty: 11, px: 12*TILE, py: 11*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
-  score = 0; steps = 0; endShown = false;
-  dialogActive = false; dialogNPC = null;
-  document.getElementById('dialog-box').style.display = 'none';
+function restartGame(){
+  items.forEach(i=>i.collected=false);
+  NPCS.forEach(n=>n.dIdx=0);
+  player={tx:5,ty:5,px:5*TILE,py:5*TILE,dir:'down',frame:0};
+  score=0; steps=0; endShown=false; dialogActive=false; dialogNPC=null;
+  document.getElementById('dialog-box').style.display='none';
   document.getElementById('end-screen').classList.remove('show');
-  document.getElementById('score').textContent = '0';
-  document.getElementById('steps').textContent = '0';
+  document.getElementById('score').textContent='0';
+  document.getElementById('steps').textContent='0';
   updateSlots();
-
-  // Pastikan touch controls muncul kembali
-  const touchControls = document.getElementById('touch-controls');
-  touchControls.classList.add('show');
-  touchControls.style.display = 'flex';
-  touchControls.style.pointerEvents = 'auto';
 }
 
-let lastTime = 0;
-let moveTimer = 0;
-const MOVE_DELAY = 140; // Delay antar gerakan
+// ─────────────────────────────────────────────
+//  MOVEMENT LOOP
+// ─────────────────────────────────────────────
+let lastTime=0, moveTimer=0;
+const MOVE_DELAY=140;
 
-function loop(ts = 0) {
-  const dt = ts - lastTime; 
-  lastTime = ts;
+function loop(ts=0){
+  const dt=ts-lastTime; lastTime=ts;
   update(dt);
   render();
   requestAnimationFrame(loop);
 }
 
-function triggerMove(dir) {
-  if (!gameStarted || dialogActive || endShown) return;
-  
-  let mx = 0, my = 0;
-  if (dir === 'left') { mx = -1; player.dir = 'left'; }
-  else if (dir === 'right') { mx = 1; player.dir = 'right'; }
-  else if (dir === 'up') { my = -1; player.dir = 'up'; }
-  else if (dir === 'down') { my = 1; player.dir = 'down'; }
-  
-  const nx = player.tx + mx, ny = player.ty + my;
-  
-  if (!isSolid(nx, ny)) {
-    player.tx = nx; 
-    player.ty = ny;
-    player.px = nx * TILE; 
-    player.py = ny * TILE;
-    
-    steps++;
-    document.getElementById('steps').textContent = steps;
-    player.frame = (player.frame + 1) % 4;
-    
-    // Auto-pick item
-    for (const it of items) {
-      if (!it.collected && it.tx === player.tx && it.ty === player.ty) {
-        it.collected = true;
-        score += 100;
-        document.getElementById('score').textContent = score;
-        updateSlots();
-        showNotif('✨ Dapat ' + it.emoji + ' ' + it.name + '!');
-        checkWin();
+function update(dt){
+  if(!gameStarted||dialogActive||endShown) return;
+
+  moveTimer-=dt;
+  if(moveTimer<=0){
+    let mx=0, my=0;
+    if(keys['ArrowLeft'] ||keys['a']||keys['A']){mx=-1;player.dir='left';}
+    else if(keys['ArrowRight']||keys['d']||keys['D']){mx=1; player.dir='right';}
+    else if(keys['ArrowUp']  ||keys['w']||keys['W']){my=-1;player.dir='up';}
+    else if(keys['ArrowDown'] ||keys['s']||keys['S']){my=1; player.dir='down';}
+
+    if(mx||my){
+      const nx=player.tx+mx, ny=player.ty+my;
+      if(!isSolid(nx,ny)){
+        player.tx=nx; player.ty=ny;
+        player.px=nx*TILE; player.py=ny*TILE;
+        player.frame=(player.frame+1)%4;
+        steps++; document.getElementById('steps').textContent=steps;
+        // auto-pick
+        for(const it of items)
+          if(!it.collected&&it.tx===player.tx&&it.ty===player.ty) collectItem(it);
       }
+      moveTimer=MOVE_DELAY;
     }
   }
+
+  if(notifTimer>0 && --notifTimer===0)
+    document.getElementById('notification').classList.remove('show');
 }
 
-function update(dt) {
-  if (!gameStarted || dialogActive || endShown) return;
+// ─────────────────────────────────────────────
+//  RENDERING
+// ─────────────────────────────────────────────
+function drawTile(tx,ty){
+  const x=tx*TILE, y=ty*TILE, t=MAP[ty][tx];
+  ctx.fillStyle=(tx+ty)%2===0?C.grass:C.grass2;
+  ctx.fillRect(x,y,TILE,TILE);
 
-  // Update notifikasi saja - movement sudah di-handle touch/keyboard terpisah
-  if (notifTimer > 0) {
-    notifTimer--;
-    if (notifTimer === 0) {
-      document.getElementById('notification').classList.remove('show');
-    }
+  if(t===1){
+    ctx.fillStyle=C.path;
+    ctx.fillRect(x+1,y+1,TILE-2,TILE-2);
+    ctx.fillStyle=C.path2;
+    ctx.fillRect(x+5,y+5,8,5); ctx.fillRect(x+24,y+24,10,5);
+  } else if(t===2){
+    ctx.fillStyle=C.water; ctx.fillRect(x,y,TILE,TILE);
+    ctx.fillStyle=C.water2;
+    ctx.fillRect(x+4,y+10,14,4); ctx.fillRect(x+22,y+26,10,4);
+    ctx.fillStyle='#aaeeff88';
+    ctx.fillRect(x+10,y+8,3,3); ctx.fillRect(x+28,y+22,3,3);
+  } else if(t===3){
+    ctx.fillStyle=C.trunk; ctx.fillRect(x+18,y+26,12,22);
+    ctx.fillStyle=C.tree;  ctx.fillRect(x+6,y+5,36,28);
+    ctx.fillStyle='#3a8a3a'; ctx.fillRect(x+12,y+2,24,14);
+    ctx.fillStyle='#5aaa5a';
+    ctx.fillRect(x+12,y+8,6,6); ctx.fillRect(x+28,y+14,6,6);
+  } else if(t===6){
+    ctx.fillStyle=C.flower;  ctx.fillRect(x+18,y+10,12,12);
+    ctx.fillStyle='#ffaaee';
+    ctx.fillRect(x+14,y+8,6,6);  ctx.fillRect(x+28,y+8,6,6);
+    ctx.fillRect(x+14,y+22,6,6); ctx.fillRect(x+28,y+22,6,6);
+    ctx.fillStyle=C.yellow; ctx.fillRect(x+19,y+13,10,8);
+    ctx.fillStyle='#33aa33'; ctx.fillRect(x+21,y+28,6,14);
+  } else if(t===9){
+    ctx.fillStyle=C.wood;    ctx.fillRect(x+20,y+22,6,22);
+    ctx.fillStyle='#c8a870'; ctx.fillRect(x+8,y+10,32,18);
+    ctx.fillStyle=C.black;
+    ctx.fillRect(x+13,y+14,22,3); ctx.fillRect(x+13,y+20,16,3);
+    ctx.fillStyle=C.pink;
+    ctx.fillRect(x+38,y+8,5,5); ctx.fillRect(x+5,y+8,5,5);
   }
 }
 
-// ---- RENDER ----
-function drawTile(tx, ty) {
-  const x = tx * TILE, y = ty * TILE, t = MAP[ty][tx];
-  // Grass base
-  ctx.fillStyle = (tx + ty) % 2 === 0 ? C.grass : C.grass2;
-  ctx.fillRect(x, y, TILE, TILE);
-
-  if (t === 1) { // path
-    ctx.fillStyle = C.path;
-    ctx.fillRect(x+1, y+1, TILE-2, TILE-2);
-    ctx.fillStyle = '#b8986e';
-    ctx.fillRect(x+4, y+4, 6, 4); ctx.fillRect(x+18, y+18, 8, 4);
-  } else if (t === 2) { // water
-    ctx.fillStyle = C.water;
-    ctx.fillRect(x, y, TILE, TILE);
-    ctx.fillStyle = C.water2;
-    ctx.fillRect(x+4, y+8, 10, 3); ctx.fillRect(x+18, y+20, 8, 3);
-    // sparkle
-    ctx.fillStyle = '#aaeeff88';
-    ctx.fillRect(x+8, y+6, 2, 2); ctx.fillRect(x+22, y+18, 2, 2);
-  } else if (t === 3) { // tree
-    ctx.fillStyle = C.trunk;
-    ctx.fillRect(x+12, y+20, 8, 12);
-    ctx.fillStyle = C.tree;
-    ctx.fillRect(x+4, y+4, 24, 22);
-    ctx.fillStyle = '#3a8a3a';
-    ctx.fillRect(x+8, y+2, 16, 10);
-    ctx.fillStyle = '#5aaa5a';
-    ctx.fillRect(x+8, y+6, 4, 4); ctx.fillRect(x+18, y+10, 4, 4);
-  } else if (t === 6) { // flower
-    ctx.fillStyle = C.flower;
-    ctx.fillRect(x+12, y+8, 8, 8);
-    ctx.fillStyle = '#ffaaee';
-    ctx.fillRect(x+10, y+6, 4, 4); ctx.fillRect(x+18, y+6, 4, 4);
-    ctx.fillRect(x+10, y+16, 4, 4); ctx.fillRect(x+18, y+16, 4, 4);
-    ctx.fillStyle = C.yellow;
-    ctx.fillRect(x+13, y+10, 6, 6);
-    ctx.fillStyle = '#33aa33';
-    ctx.fillRect(x+14, y+20, 4, 10);
-  } else if (t === 9) { // sign
-    ctx.fillStyle = C.wood;
-    ctx.fillRect(x+14, y+16, 4, 14);
-    ctx.fillStyle = '#c8a870';
-    ctx.fillRect(x+6, y+8, 20, 12);
-    ctx.fillStyle = C.black;
-    ctx.fillRect(x+9, y+11, 14, 2); ctx.fillRect(x+9, y+15, 10, 2);
-    // Sparkle sign
-    ctx.fillStyle = C.pink;
-    ctx.fillRect(x+24, y+6, 4, 4); ctx.fillRect(x+4, y+6, 4, 4);
-  }
+function drawHouse(tx,ty){
+  if(tx%2!==0||ty%2!==0) return;
+  const hx=tx*TILE, hy=ty*TILE;
+  ctx.fillStyle=C.wall;   ctx.fillRect(hx,hy+TILE,TILE*2,TILE);
+  ctx.fillStyle=C.roof;   ctx.fillRect(hx-5,hy+5,TILE*2+10,TILE);
+  ctx.fillStyle=C.roof2;  ctx.fillRect(hx+5,hy+10,TILE*2,8);
+  ctx.fillStyle=C.door;   ctx.fillRect(hx+30,hy+TILE+10,16,34);
+  ctx.fillStyle=C.win;    ctx.fillRect(hx+7,hy+TILE+12,16,14);
+  ctx.fillStyle='#fff5';  ctx.fillRect(hx+7,hy+TILE+12,7,6);
+  ctx.fillStyle=C.stone;  ctx.fillRect(hx+62,hy-5,14,18);
+  ctx.fillStyle='#9998';  ctx.fillRect(hx+65,hy-3,8,6);
 }
 
-function drawHouse(tx, ty) {
-  const x = tx * TILE, y = ty * TILE;
-  if (tx % 2 !== 0 || ty % 2 !== 0) return;
-  const hx = tx * TILE, hy = ty * TILE;
-  // Wall
-  ctx.fillStyle = C.wall;
-  ctx.fillRect(hx, hy + TILE, TILE*2, TILE);
-  // Roof
-  ctx.fillStyle = C.roof;
-  ctx.fillRect(hx-4, hy+4, TILE*2+8, TILE);
-  ctx.fillStyle = C.roof2;
-  ctx.fillRect(hx+4, hy+8, TILE*2, 6);
-  // Door
-  ctx.fillStyle = C.door;
-  ctx.fillRect(hx+22, hy+TILE+8, 12, 24);
-  // Window
-  ctx.fillStyle = C.window;
-  ctx.fillRect(hx+6, hy+TILE+10, 12, 10);
-  ctx.fillStyle = '#ffffff55';
-  ctx.fillRect(hx+6, hy+TILE+10, 5, 4);
-  // Chimney
-  ctx.fillStyle = C.stone;
-  ctx.fillRect(hx+48, hy-4, 10, 14);
-  ctx.fillStyle = '#99999988';
-  ctx.fillRect(hx+50, hy-2, 6, 4);
-}
+// character image
+const playerImg=new Image();
+playerImg.src='character.png';
+let imgReady=false;
+playerImg.onload=()=>{ imgReady=true; };
 
-// Load player character image
-const playerImg = new Image();
-playerImg.src = 'character.png'; // Ganti dengan URL gambar karakter pixel favoritmu
-let playerImgLoaded = false;
-playerImg.onload = () => { playerImgLoaded = true; };
-
-function drawPlayer() {
-  const x = player.px, y = player.py;
-  const bob = Math.sin(player.frame * Math.PI / 2) * 2;
-
-  // Shadow
-  ctx.fillStyle = '#00000044';
+function drawPlayer(){
+  const x=player.px, y=player.py;
+  const bob=Math.sin(player.frame*Math.PI/2)*2;
+  // shadow
+  ctx.fillStyle='#00000055';
   ctx.beginPath();
-  ctx.ellipse(x + TILE/2, y + TILE - 3, 10, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(x+TILE/2,y+TILE-4,13,5,0,0,Math.PI*2);
   ctx.fill();
 
-  if (playerImgLoaded) {
-    // Flip horizontally if facing left
+  if(imgReady){
     ctx.save();
-    if (player.dir === 'left') {
-      ctx.translate(x + TILE, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(playerImg, 0, y - 18 + bob, TILE, TILE + 20);
+    if(player.dir==='left'){
+      ctx.translate(x+TILE,0);
+      ctx.scale(-1,1);
+      ctx.drawImage(playerImg,0,y-24+bob,TILE,TILE+28);
     } else {
-      ctx.drawImage(playerImg, x, y - 18 + bob, TILE, TILE + 20);
+      ctx.drawImage(playerImg,x,y-24+bob,TILE,TILE+28);
     }
     ctx.restore();
   } else {
-    // Fallback pixel character while image loads
-    ctx.fillStyle = '#ff6fa8';
-    ctx.fillRect(x+10, y+14+bob, 12, 14);
-    ctx.fillStyle = '#ffdab9';
-    ctx.fillRect(x+8, y+2+bob, 16, 14);
-    ctx.fillStyle = '#4a3000';
-    ctx.fillRect(x+6, y+bob, 20, 8);
+    // fallback
+    ctx.fillStyle='#ff6fa8'; ctx.fillRect(x+12,y+16+bob,18,18);
+    ctx.fillStyle='#ffdab9'; ctx.fillRect(x+10,y+4+bob,20,16);
+    ctx.fillStyle='#4a3000'; ctx.fillRect(x+8,y+bob,24,10);
   }
 }
 
-function drawNPC(npc) {
-  const x = npc.tx * TILE, y = npc.ty * TILE;
-  const bob = Math.sin(Date.now() / 400 + npc.tx) * 2;
-  ctx.font = '22px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(npc.emoji, x + TILE/2, y + TILE/2 + bob);
-  // Name tag
-  ctx.fillStyle = '#1a0a2ecc';
-  ctx.fillRect(x-10, y-16, TILE+20, 14);
-  ctx.fillStyle = '#ffb7d5';
-  ctx.font = '5px "Press Start 2P", monospace';
-  ctx.fillText(npc.name, x + TILE/2, y - 6);
-  // Talk bubble indicator
-  const dx = Math.abs(npc.tx - player.tx), dy = Math.abs(npc.ty - player.ty);
-  if (dx + dy <= 1.5) {
-    ctx.fillStyle = C.pink;
-    ctx.font = '8px serif';
-    ctx.fillText('💬', x + TILE/2, y - 20 + bob);
+function drawNPC(npc){
+  const x=npc.tx*TILE, y=npc.ty*TILE;
+  const bob=Math.sin(Date.now()/420+npc.tx)*2.5;
+  ctx.font='28px serif'; ctx.textAlign='center';
+  ctx.fillText(npc.emoji, x+TILE/2, y+TILE/2+2+bob);
+  // name tag
+  ctx.fillStyle='rgba(20,2,14,.82)';
+  ctx.fillRect(x-12,y-18,TILE+24,15);
+  ctx.fillStyle='#ffb7d5';
+  ctx.font='5px "Press Start 2P",monospace';
+  ctx.fillText(npc.name, x+TILE/2, y-7);
+  // talk bubble
+  if(Math.abs(npc.tx-player.tx)+Math.abs(npc.ty-player.ty)<=1.5){
+    ctx.font='10px serif';
+    ctx.fillText('💬', x+TILE/2, y-24+bob);
   }
 }
 
-function drawItem(it) {
-  if (it.collected) return;
-  const x = it.tx * TILE, y = it.ty * TILE;
-  const bob = Math.sin(Date.now() / 350 + it.tx * 3) * 3;
-  ctx.font = '18px serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(it.emoji, x + TILE/2, y + TILE/2 + bob);
-  // Glow
-  ctx.fillStyle = '#ffff0033';
-  ctx.fillRect(x+4, y+4, TILE-8, TILE-8);
+function drawItem(it){
+  if(it.collected) return;
+  const x=it.tx*TILE, y=it.ty*TILE;
+  const bob=Math.sin(Date.now()/360+it.tx*3)*3.5;
+  // glow
+  ctx.fillStyle='rgba(255,255,100,.12)';
+  ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
+  ctx.font='24px serif'; ctx.textAlign='center';
+  ctx.fillText(it.emoji, x+TILE/2, y+TILE/2+2+bob);
 }
 
-function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Draw tiles
-  for (let ty = 0; ty < ROWS; ty++) {
-    for (let tx = 0; tx < COLS; tx++) {
-      drawTile(tx, ty);
-    }
-  }
-
-  // Draw houses
-  const housePairs = [[2,2],[2,13],[8,2],[8,13],[21,2]];
-  for (const [hr, hc] of housePairs) {
-    drawHouse(hc, hr);
-  }
-
-  // Draw items
-  for (const it of items) drawItem(it);
-
-  // Draw NPCs
-  ctx.save();
-  for (const npc of NPCS) drawNPC(npc);
-  ctx.restore();
-
-  // Draw player (on top)
+function render(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let ty=0;ty<ROWS;ty++) for(let tx=0;tx<COLS;tx++) drawTile(tx,ty);
+  // houses
+  [[2,2],[2,11],[8,2],[8,11]].forEach(([hr,hc])=>drawHouse(hc,hr));
+  items.forEach(it=>drawItem(it));
+  ctx.save(); NPCS.forEach(n=>drawNPC(n)); ctx.restore();
   drawPlayer();
-
-  // Vignette overlay
-  const vg = ctx.createRadialGradient(256, 192, 80, 256, 192, 280);
-  vg.addColorStop(0, 'transparent');
-  vg.addColorStop(1, '#1a0a2e44');
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // soft vignette
+  const vg=ctx.createRadialGradient(384,288,100,384,288,400);
+  vg.addColorStop(0,'transparent');
+  vg.addColorStop(1,'rgba(20,0,12,.4)');
+  ctx.fillStyle=vg;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 </script>
 </body>
 </html>
-
