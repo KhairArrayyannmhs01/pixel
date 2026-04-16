@@ -216,14 +216,20 @@
   #start-btn:hover { background: #ff6fa822; }
   #touch-controls {
     display: none;
-    position: absolute;
+    position: fixed;
     bottom: 20px;
     right: 20px;
     gap: 8px;
-    z-index: 25;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0.7;
+    flex-direction: column;
+  }
+  #touch-controls.show {
+    display: flex;
+    opacity: 1;
     pointer-events: auto;
   }
-  #touch-controls.show { display: flex; flex-direction: column; }
   .touch-row {
     display: flex;
     gap: 8px;
@@ -424,22 +430,27 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// Touch controls
-document.addEventListener('DOMContentLoaded', function() {
+// Touch controls - Initialize immediately
+function initTouchControls() {
   document.querySelectorAll('.touch-btn').forEach(btn => {
     let isPressed = false;
 
     const handleStart = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (!gameStarted && btn.dataset.dir) return; // Only allow action button before game starts
       isPressed = true;
       const dir = btn.dataset.dir;
       const action = btn.dataset.action;
-      if (dir) {
+      if (dir && gameStarted) {
         keys[dir] = true;
       }
-      if (action === 'action' && !endShown) {
-        handleAction();
+      if (action === 'action') {
+        if (!gameStarted) {
+          startGame();
+        } else if (!endShown) {
+          handleAction();
+        }
       }
       btn.style.background = '#ffb7d5';
       btn.style.transform = 'scale(0.95)';
@@ -448,6 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const handleEnd = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (!gameStarted) return;
       isPressed = false;
       const dir = btn.dataset.dir;
       if (dir) {
@@ -466,8 +478,19 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.addEventListener('mousedown', handleStart);
     btn.addEventListener('mouseup', handleEnd);
     btn.addEventListener('mouseleave', handleEnd);
+
+    // Add click event as fallback
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (btn.dataset.action === 'action' && !endShown) {
+        handleAction();
+      }
+    });
   });
-});
+}
+
+// Initialize touch controls immediately
+initTouchControls();
 
 function startGame() {
   document.getElementById('start-screen').style.display = 'none';
@@ -596,7 +619,8 @@ function showEnding() {
   es.classList.add('show');
 
   // Sembunyikan touch controls saat end screen muncul
-  document.getElementById('touch-controls').style.display = 'none';
+  const touchControls = document.getElementById('touch-controls');
+  touchControls.style.display = 'none';
 
   // Pastikan restart button bisa diklik
   const restartBtn = document.getElementById('restart-btn');
