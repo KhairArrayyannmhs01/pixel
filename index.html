@@ -421,30 +421,56 @@ let gameStarted = false;
 let endShown = false;
 
 const keys = {};
-window.addEventListener('keydown', e => {
+// HAPUS event listener lama dan GANTI dengan ini:
+window.addEventListener('keydown', (e) => {
   if (!gameStarted) return;
-  keys[e.key] = true;
-  if ((e.key === 'z' || e.key === 'Z' || e.key === 'Enter') && !endShown) {
+  
+  // Prevent default untuk arrow keys
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
+    e.preventDefault();
+  }
+  
+  keys[e.key.toLowerCase()] = true;
+  keys[e.key] = true; // Simpan keduanya (case sensitive & insensitive)
+  
+  // Action key
+  if ((e.key.toLowerCase() === 'z' || e.key === 'Enter') && !endShown) {
+    e.preventDefault();
     handleAction();
   }
 });
-window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// Touch controls - Initialize immediately
+window.addEventListener('keyup', (e) => {
+  keys[e.key.toLowerCase()] = false;
+  keys[e.key] = false;
+});
+
 function initTouchControls() {
   document.querySelectorAll('.touch-btn').forEach(btn => {
     let isPressed = false;
+    let pressTimer = 0;
+    const REPEAT_DELAY = 200; // Delay pertama
+    const REPEAT_INTERVAL = 100; // Interval gerakan berulang
 
     const handleStart = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!gameStarted && btn.dataset.dir) return; // Only allow action button before game starts
+      
+      if (!gameStarted && btn.dataset.dir) return; // Hanya action button sebelum start
+      
       isPressed = true;
+      pressTimer = REPEAT_DELAY;
+      
       const dir = btn.dataset.dir;
       const action = btn.dataset.action;
+      
       if (dir && gameStarted) {
+        // Set direction key ON
         keys[dir] = true;
+        // Langsung trigger 1 gerakan pertama
+        triggerMove(dir);
       }
+      
       if (action === 'action') {
         if (!gameStarted) {
           startGame();
@@ -452,6 +478,8 @@ function initTouchControls() {
           handleAction();
         }
       }
+      
+      // Visual feedback
       btn.style.background = '#ffb7d5';
       btn.style.transform = 'scale(0.95)';
     };
@@ -459,32 +487,54 @@ function initTouchControls() {
     const handleEnd = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!gameStarted) return;
+      
       isPressed = false;
+      
       const dir = btn.dataset.dir;
       if (dir) {
         keys[dir] = false;
       }
+      
+      // Reset visual
       btn.style.background = '#ff6fa8';
       btn.style.transform = 'scale(1)';
     };
 
-    // Touch events
+    // EVENT TOUCH
     btn.addEventListener('touchstart', handleStart, { passive: false });
     btn.addEventListener('touchend', handleEnd, { passive: false });
     btn.addEventListener('touchcancel', handleEnd, { passive: false });
+    btn.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
-    // Mouse events (for desktop testing)
+    // EVENT MOUSE (untuk testing desktop)
     btn.addEventListener('mousedown', handleStart);
     btn.addEventListener('mouseup', handleEnd);
     btn.addEventListener('mouseleave', handleEnd);
+    btn.addEventListener('mousemove', (e) => {
+      if (isPressed) e.preventDefault();
+    });
 
-    // Add click event as fallback
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (btn.dataset.action === 'action' && !endShown) {
-        handleAction();
+    // Continuous movement loop untuk tombol ini
+    function updateTouchMovement() {
+      if (!isPressed || !btn.dataset.dir || !gameStarted) return;
+      
+      pressTimer -= 16; // ~60fps
+      
+      if (pressTimer <= 0) {
+        triggerMove(btn.dataset.dir);
+        pressTimer = REPEAT_INTERVAL;
       }
+      
+      requestAnimationFrame(updateTouchMovement);
+    }
+    
+    // Mulai loop saat disentuh
+    btn.addEventListener('touchstart', () => {
+      if (btn.dataset.dir) updateTouchMovement();
+    }, { passive: false });
+    
+    btn.addEventListener('mousedown', () => {
+      if (btn.dataset.dir) updateTouchMovement();
     });
   });
 }
@@ -656,55 +706,60 @@ function restartGame() {
 
 let lastTime = 0;
 let moveTimer = 0;
-const MOVE_DELAY = 140;
+const MOVE_DELAY = 140; // Delay antar gerakan
 
 function loop(ts = 0) {
-  const dt = ts - lastTime; lastTime = ts;
+  const dt = ts - lastTime; 
+  lastTime = ts;
   update(dt);
   render();
   requestAnimationFrame(loop);
 }
 
-function update(dt) {
+function triggerMove(dir) {
   if (!gameStarted || dialogActive || endShown) return;
-
-  moveTimer -= dt;
-  if (moveTimer <= 0) {
-    let mx = 0, my = 0;
-    if (keys['ArrowLeft'] || keys['a'] || keys['A']) { mx = -1; player.dir = 'left'; }
-    else if (keys['ArrowRight'] || keys['d'] || keys['D']) { mx = 1; player.dir = 'right'; }
-    else if (keys['ArrowUp'] || keys['w'] || keys['W']) { my = -1; player.dir = 'up'; }
-    else if (keys['ArrowDown'] || keys['s'] || keys['S']) { my = 1; player.dir = 'down'; }
-
-    if (mx !== 0 || my !== 0) {
-      const nx = player.tx + mx, ny = player.ty + my;
-      if (!isSolid(nx, ny)) {
-        player.tx = nx; player.ty = ny;
-        player.px = nx * TILE; player.py = ny * TILE;
-        steps++;
-        document.getElementById('steps').textContent = steps;
-        player.frame = (player.frame + 1) % 4;
-        moveTimer = MOVE_DELAY;
-        // Auto-pick item
-        for (const it of items) {
-          if (!it.collected && it.tx === player.tx && it.ty === player.ty) {
-            it.collected = true;
-            score += 100;
-            document.getElementById('score').textContent = score;
-            updateSlots();
-            showNotif('✨ Dapat ' + it.emoji + ' ' + it.name + '!');
-            checkWin();
-          }
-        }
-      } else {
-        moveTimer = MOVE_DELAY;
+  
+  let mx = 0, my = 0;
+  if (dir === 'left') { mx = -1; player.dir = 'left'; }
+  else if (dir === 'right') { mx = 1; player.dir = 'right'; }
+  else if (dir === 'up') { my = -1; player.dir = 'up'; }
+  else if (dir === 'down') { my = 1; player.dir = 'down'; }
+  
+  const nx = player.tx + mx, ny = player.ty + my;
+  
+  if (!isSolid(nx, ny)) {
+    player.tx = nx; 
+    player.ty = ny;
+    player.px = nx * TILE; 
+    player.py = ny * TILE;
+    
+    steps++;
+    document.getElementById('steps').textContent = steps;
+    player.frame = (player.frame + 1) % 4;
+    
+    // Auto-pick item
+    for (const it of items) {
+      if (!it.collected && it.tx === player.tx && it.ty === player.ty) {
+        it.collected = true;
+        score += 100;
+        document.getElementById('score').textContent = score;
+        updateSlots();
+        showNotif('✨ Dapat ' + it.emoji + ' ' + it.name + '!');
+        checkWin();
       }
     }
   }
+}
 
+function update(dt) {
+  if (!gameStarted || dialogActive || endShown) return;
+
+  // Update notifikasi saja - movement sudah di-handle touch/keyboard terpisah
   if (notifTimer > 0) {
     notifTimer--;
-    if (notifTimer === 0) document.getElementById('notification').classList.remove('show');
+    if (notifTimer === 0) {
+      document.getElementById('notification').classList.remove('show');
+    }
   }
 }
 
@@ -895,3 +950,4 @@ function render() {
 </script>
 </body>
 </html>
+
