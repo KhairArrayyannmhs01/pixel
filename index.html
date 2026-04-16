@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ Pixel Adventure — Petualangan Spesial</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a0a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Press Start 2P', monospace;
+    overflow: hidden;
+  }
+  #game-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  #title-bar {
+    color: #ffb7d5;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px #ff6fa8;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  #canvas {
+    border: 3px solid #ff6fa8;
+    box-shadow: 0 0 30px #ff6fa855, 0 0 60px #9b59b622;
+    image-rendering: pixelated;
+    cursor: default;
+  }
+  #hud {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+  .hud-item {
+    color: #ffb7d5;
+    font-size: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #item-slots {
+    display: flex;
+    gap: 4px;
+  }
+  .slot {
+    width: 20px; height: 20px;
+    border: 2px solid #ff6fa855;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    background: #2a0a3e;
+    transition: border-color 0.2s;
+  }
+  .slot.filled { border-color: #ffb7d5; }
+  #dialog-box {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a0a2e;
+    border: 3px solid #ff6fa8;
+    border-radius: 6px;
+    padding: 14px 18px;
+    width: 520px;
+    max-width: 96vw;
+    display: none;
+    box-shadow: 0 0 20px #ff6fa855;
+    z-index: 10;
+  }
+  #dialog-name {
+    color: #ffb7d5;
+    font-size: 8px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 8px #ff6fa8;
+  }
+  #dialog-text {
+    color: #fff;
+    font-size: 7px;
+    line-height: 1.9;
+    min-height: 40px;
+  }
+  #dialog-prompt {
+    color: #ff6fa8;
+    font-size: 6px;
+    text-align: right;
+    margin-top: 8px;
+    animation: pulse 1s infinite;
+  }
+  #controls-hint {
+    color: #ffffff44;
+    font-size: 6px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  #end-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: #1a0a2eee;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    border-radius: 4px;
+    z-index: 20;
+    padding: 30px;
+    text-align: center;
+  }
+  #end-screen.show { display: flex; }
+  #end-title {
+    color: #ffb7d5;
+    font-size: 13px;
+    text-shadow: 0 0 20px #ff6fa8;
+    animation: pulse 1.5s infinite;
+  }
+  #end-message {
+    color: #fff;
+    font-size: 7px;
+    line-height: 2.2;
+    max-width: 400px;
+    border: 2px solid #ff6fa855;
+    border-radius: 6px;
+    padding: 16px 20px;
+    background: #2a0a3e88;
+  }
+  #end-hearts {
+    font-size: 20px;
+    animation: floatHeart 2s infinite;
+  }
+  @keyframes floatHeart { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  #restart-btn {
+    background: #ff6fa8;
+    color: #1a0a2e;
+    border: none;
+    padding: 10px 20px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    cursor: pointer;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  #restart-btn:hover { background: #ffb7d5; transform: scale(1.05); }
+  #notification {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ff6fa8;
+    color: #1a0a2e;
+    font-size: 7px;
+    padding: 8px 14px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 15;
+  }
+  #notification.show { opacity: 1; }
+  #start-screen {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    background: #1a0a2ef0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    z-index: 30;
+    border-radius: 4px;
+  }
+  #start-title {
+    color: #ffb7d5;
+    font-size: 11px;
+    text-shadow: 0 0 20px #ff6fa8;
+    text-align: center;
+    line-height: 2;
+  }
+  #start-sub {
+    color: #fff8;
+    font-size: 6px;
+    text-align: center;
+    line-height: 2.2;
+  }
+  #start-btn {
+    background: transparent;
+    color: #ff6fa8;
+    border: 2px solid #ff6fa8;
+    padding: 10px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    animation: pulse 1.5s infinite;
+    letter-spacing: 1px;
+  }
+  #start-btn:hover { background: #ff6fa822; }
+</style>
+</head>
+<body>
+<div id="game-wrapper">
+  <div id="title-bar">✨ PIXEL ADVENTURE — PETUALANGAN SPESIAL ✨</div>
+  <div style="position:relative;">
+    <canvas id="canvas" width="512" height="384"></canvas>
+    <div id="dialog-box">
+      <div id="dialog-name"></div>
+      <div id="dialog-text"></div>
+      <div id="dialog-prompt">[ TEKAN Z / ENTER untuk lanjut ]</div>
+    </div>
+    <div id="notification"></div>
+    <div id="end-screen">
+      <div id="end-hearts">💖 💖 💖</div>
+      <div id="end-title">SELAMAT! ✨</div>
+      <div id="end-message"></div>
+      <div id="end-hearts">🌸 🌟 🌸</div>
+      <button id="restart-btn" onclick="restartGame()">▶ Main Lagi</button>
+    </div>
+    <div id="start-screen" id="start-screen">
+      <div id="start-title">✨ PIXEL ADVENTURE ✨<br>Petualangan Spesial</div>
+      <div id="start-sub">
+        Jelajahi dunia pixel yang ajaib!<br>
+        Bicara dengan NPC, kumpulkan item,<br>
+        dan temukan pesan spesial untukmu~ 🌸<br><br>
+        WASD / Arrow = Jalan<br>
+        Z / Enter = Bicara / Ambil
+      </div>
+      <button id="start-btn" onclick="startGame()">▶ MULAI PETUALANGAN</button>
+    </div>
+  </div>
+  <div id="hud">
+    <div class="hud-item">🌸 ITEM: <div id="item-slots"></div></div>
+    <div class="hud-item">⭐ <span id="score">0</span></div>
+    <div class="hud-item">❤️ <span id="steps">0</span> langkah</div>
+  </div>
+  <div id="controls-hint">WASD / ARROW = gerak &nbsp;|&nbsp; Z / ENTER = bicara & ambil</div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const TILE = 32;
+const COLS = 16, ROWS = 12;
+
+// Warna palette
+const C = {
+  grass: '#4a9e4a', grass2: '#3d8a3d', dirt: '#8B6914', path: '#c8a86e',
+  water: '#3b8bd8', water2: '#2a7bc8', sand: '#e8d08a',
+  wood: '#8B5E3C', roof: '#c84040', roof2: '#a83030',
+  wall: '#d4b896', stone: '#888', flower: '#ff88cc',
+  tree: '#2d6e2d', trunk: '#6b3e1e',
+  pink: '#ff6fa8', lightpink: '#ffb7d5', purple: '#9b59b6',
+  yellow: '#ffd700', white: '#fff', black: '#1a0a2e',
+  door: '#6b3e1e', window: '#88bbff'
+};
+
+// MAP: 0=grass, 1=path, 2=water, 3=tree, 4=house, 5=wall, 6=flower, 7=sand, 8=rock, 9=sign
+const MAP = [
+  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+  [3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,3,0,0,0,4,4,0,0,3],
+  [3,0,4,4,0,1,0,0,6,6,0,4,4,0,0,3],
+  [3,0,0,0,0,1,0,0,6,0,0,0,0,0,0,3],
+  [3,1,1,1,1,1,1,1,1,1,1,1,1,1,0,3],
+  [3,0,6,0,0,1,0,0,0,0,0,0,6,0,3,3],
+  [3,0,0,0,0,1,0,3,0,9,0,0,0,0,0,3],
+  [3,0,4,4,0,1,0,0,0,0,0,4,4,0,0,3],
+  [3,0,4,4,0,1,0,0,2,2,0,4,4,0,0,3],
+  [3,0,0,0,0,1,0,0,2,2,0,0,0,0,0,3],
+  [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+];
+
+const SOLID = [2, 3, 5, 8];
+const HOUSE_TILES = [[2,2],[2,3],[3,2],[3,3],[2,11],[2,12],[3,11],[3,12],[8,2],[8,3],[9,2],[9,3],[8,11],[8,12],[9,11],[9,12]];
+
+function isSolid(tx, ty) {
+  if (tx < 0 || ty < 0 || tx >= COLS || ty >= ROWS) return true;
+  const t = MAP[ty][tx];
+  if (SOLID.includes(t)) return true;
+  for (const [hr,hc] of HOUSE_TILES) {
+    if (ty === hr && tx === hc) return true;
+  }
+  return false;
+}
+
+// Items di map [x tile, y tile, emoji, name, collected]
+let items = [
+  { tx: 8, ty: 3, emoji: '⭐', name: 'Bintang Ajaib', collected: false },
+  { tx: 12, ty: 6, emoji: '🌸', name: 'Bunga Sakura', collected: false },
+  { tx: 2, ty: 6, emoji: '💎', name: 'Kristal Biru', collected: false },
+  { tx: 5, ty: 7, emoji: '🍰', name: 'Kue Spesial', collected: false },
+];
+
+// NPC data
+const NPCS = [
+  {
+    tx: 4, ty: 2, emoji: '🐱', name: 'Kucing Noel',
+    dialogs: [
+      "Nyaa~ Halo halo! Aku Noel si kucing ajaib!",
+      "Katanya ada item tersembunyi di taman bunga... coba deh cari! 🌸",
+      "Psst! Kumpulkan semua item buat dapetin pesan rahasia~ Nyaa!"
+    ],
+    dIdx: 0
+  },
+  {
+    tx: 12, ty: 2, emoji: '🐰', name: 'Kelinci Mochi',
+    dialogs: [
+      "Hiii! Aku Mochi! Suka banget makan wortel~ 🥕",
+      "Ada bintang jatuh tadi pagi di sekitar sini lho!",
+      "Kata kakek pohon, ada 4 item ajaib di dunia ini~ Kamu bisa kumpulkan semuanya?"
+    ],
+    dIdx: 0
+  },
+  {
+    tx: 7, ty: 7, emoji: '🧙', name: 'Penyihir Tua',
+    dialogs: [
+      "Hohoho~ Selamat datang, petualang muda!",
+      "Kumpulkan 4 item ajaib, lalu ke papan tanda di timur...",
+      "Di sana tersimpan pesan yang sangat... sangat spesial untukmu~ ✨"
+    ],
+    dIdx: 0
+  },
+  {
+    tx: 12, ty: 9, emoji: '🦊', name: 'Rubah Kira',
+    dialogs: [
+      "Kyun~ Hai hai! Aku Kira, rubah cantik dari hutan timur!",
+      "Kamu udah ngumpulin berapa item? Aku yakin kamu bisa dapetin semua!",
+      "Jangan lupa cek papan tanda kalau udah lengkap ya~ Uwu~ 🦊"
+    ],
+    dIdx: 0
+  },
+];
+
+let player = { tx: 5, ty: 5, px: 5*TILE, py: 5*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
+let score = 0, steps = 0;
+let dialogActive = false, dialogNPC = null, dialogIdx = 0;
+let notifTimer = 0;
+let gameStarted = false;
+let endShown = false;
+
+const keys = {};
+window.addEventListener('keydown', e => {
+  if (!gameStarted) return;
+  keys[e.key] = true;
+  if ((e.key === 'z' || e.key === 'Z' || e.key === 'Enter') && !endShown) {
+    handleAction();
+  }
+});
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+function startGame() {
+  document.getElementById('start-screen').style.display = 'none';
+  gameStarted = true;
+  buildSlots();
+  loop();
+}
+
+function buildSlots() {
+  const s = document.getElementById('item-slots');
+  s.innerHTML = '';
+  items.forEach((it, i) => {
+    const d = document.createElement('div');
+    d.className = 'slot' + (it.collected ? ' filled' : '');
+    d.id = 'slot' + i;
+    d.textContent = it.collected ? it.emoji : '';
+    s.appendChild(d);
+  });
+}
+
+function updateSlots() {
+  items.forEach((it, i) => {
+    const d = document.getElementById('slot' + i);
+    if (d) {
+      d.className = 'slot' + (it.collected ? ' filled' : '');
+      d.textContent = it.collected ? it.emoji : '';
+    }
+  });
+}
+
+function showNotif(msg) {
+  const n = document.getElementById('notification');
+  n.textContent = msg;
+  n.classList.add('show');
+  notifTimer = 120;
+}
+
+function handleAction() {
+  if (dialogActive) {
+    advanceDialog();
+    return;
+  }
+  // Cek NPC di sekitar
+  for (const npc of NPCS) {
+    const dx = Math.abs(npc.tx - player.tx), dy = Math.abs(npc.ty - player.ty);
+    if (dx + dy <= 1.5) {
+      openDialog(npc);
+      return;
+    }
+  }
+  // Cek item
+  for (const it of items) {
+    if (!it.collected && it.tx === player.tx && it.ty === player.ty) {
+      it.collected = true;
+      score += 100;
+      document.getElementById('score').textContent = score;
+      updateSlots();
+      showNotif('✨ Dapat ' + it.emoji + ' ' + it.name + '!');
+      checkWin();
+      return;
+    }
+  }
+  // Cek sign
+  if (Math.abs(9 - player.tx) + Math.abs(7 - player.ty) <= 1.5) {
+    const allCollected = items.every(i => i.collected);
+    if (allCollected) {
+      showEnding();
+    } else {
+      const left = items.filter(i => !i.collected).length;
+      openSignDialog(left);
+    }
+  }
+}
+
+function openSignDialog(left) {
+  dialogActive = true;
+  document.getElementById('dialog-box').style.display = 'block';
+  document.getElementById('dialog-name').textContent = '📋 Papan Tanda';
+  document.getElementById('dialog-text').textContent =
+    `"Masih kurang ${left} item lagi... Kumpulkan semuanya dulu ya!" 🌸`;
+  dialogNPC = null;
+}
+
+function openDialog(npc) {
+  dialogActive = true;
+  dialogNPC = npc;
+  const db = document.getElementById('dialog-box');
+  db.style.display = 'block';
+  document.getElementById('dialog-name').textContent = npc.emoji + ' ' + npc.name;
+  document.getElementById('dialog-text').textContent = npc.dialogs[npc.dIdx];
+}
+
+function advanceDialog() {
+  if (dialogNPC) {
+    dialogNPC.dIdx = (dialogNPC.dIdx + 1) % dialogNPC.dialogs.length;
+  }
+  dialogActive = false;
+  dialogNPC = null;
+  document.getElementById('dialog-box').style.display = 'none';
+}
+
+function checkWin() {
+  if (items.every(i => i.collected)) {
+    showNotif('🎉 Semua item terkumpul! Pergi ke papan tanda!');
+  }
+}
+
+function showEnding() {
+  endShown = true;
+  const es = document.getElementById('end-screen');
+  // ⚙️ GANTI PESAN DI SINI SESUAI KEINGINAN KAMU:
+  document.getElementById('end-message').innerHTML =
+    `Selamat, petualang terhebat!<br><br>
+     Makasih ya udah mau main game kecil ini...<br>
+     Sama seperti kamu ngumpulin semua item ini,<br>
+     aku juga ngumpulin semua hal yg aku bisa buat kamu<br>
+     kenapa aku suka sama kamu. 💖<br><br>
+     Dan jumlahnya? Nggak terhitung. 🌸<br><br>
+     Kamu adalah petualangan favoritku.<br>
+     Sekarang dan selamanya. ✨<br><br>
+     — dari yang selalu sayang kamu 🐱`;
+  es.classList.add('show');
+  score += 500;
+  document.getElementById('score').textContent = score;
+}
+
+function restartGame() {
+  items.forEach(i => i.collected = false);
+  NPCS.forEach(n => n.dIdx = 0);
+  player = { tx: 5, ty: 5, px: 5*TILE, py: 5*TILE, dir: 'down', moving: false, frame: 0, animTimer: 0 };
+  score = 0; steps = 0; endShown = false;
+  dialogActive = false; dialogNPC = null;
+  document.getElementById('dialog-box').style.display = 'none';
+  document.getElementById('end-screen').classList.remove('show');
+  document.getElementById('score').textContent = '0';
+  document.getElementById('steps').textContent = '0';
+  updateSlots();
+}
+
+let lastTime = 0;
+let moveTimer = 0;
+const MOVE_DELAY = 140;
+
+function loop(ts = 0) {
+  const dt = ts - lastTime; lastTime = ts;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  if (!gameStarted || dialogActive || endShown) return;
+
+  moveTimer -= dt;
+  if (moveTimer <= 0) {
+    let mx = 0, my = 0;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) { mx = -1; player.dir = 'left'; }
+    else if (keys['ArrowRight'] || keys['d'] || keys['D']) { mx = 1; player.dir = 'right'; }
+    else if (keys['ArrowUp'] || keys['w'] || keys['W']) { my = -1; player.dir = 'up'; }
+    else if (keys['ArrowDown'] || keys['s'] || keys['S']) { my = 1; player.dir = 'down'; }
+
+    if (mx !== 0 || my !== 0) {
+      const nx = player.tx + mx, ny = player.ty + my;
+      if (!isSolid(nx, ny)) {
+        player.tx = nx; player.ty = ny;
+        player.px = nx * TILE; player.py = ny * TILE;
+        steps++;
+        document.getElementById('steps').textContent = steps;
+        player.frame = (player.frame + 1) % 4;
+        moveTimer = MOVE_DELAY;
+        // Auto-pick item
+        for (const it of items) {
+          if (!it.collected && it.tx === player.tx && it.ty === player.ty) {
+            it.collected = true;
+            score += 100;
+            document.getElementById('score').textContent = score;
+            updateSlots();
+            showNotif('✨ Dapat ' + it.emoji + ' ' + it.name + '!');
+            checkWin();
+          }
+        }
+      } else {
+        moveTimer = MOVE_DELAY;
+      }
+    }
+  }
+
+  if (notifTimer > 0) {
+    notifTimer--;
+    if (notifTimer === 0) document.getElementById('notification').classList.remove('show');
+  }
+}
+
+// ---- RENDER ----
+function drawTile(tx, ty) {
+  const x = tx * TILE, y = ty * TILE, t = MAP[ty][tx];
+  // Grass base
+  ctx.fillStyle = (tx + ty) % 2 === 0 ? C.grass : C.grass2;
+  ctx.fillRect(x, y, TILE, TILE);
+
+  if (t === 1) { // path
+    ctx.fillStyle = C.path;
+    ctx.fillRect(x+1, y+1, TILE-2, TILE-2);
+    ctx.fillStyle = '#b8986e';
+    ctx.fillRect(x+4, y+4, 6, 4); ctx.fillRect(x+18, y+18, 8, 4);
+  } else if (t === 2) { // water
+    ctx.fillStyle = C.water;
+    ctx.fillRect(x, y, TILE, TILE);
+    ctx.fillStyle = C.water2;
+    ctx.fillRect(x+4, y+8, 10, 3); ctx.fillRect(x+18, y+20, 8, 3);
+    // sparkle
+    ctx.fillStyle = '#aaeeff88';
+    ctx.fillRect(x+8, y+6, 2, 2); ctx.fillRect(x+22, y+18, 2, 2);
+  } else if (t === 3) { // tree
+    ctx.fillStyle = C.trunk;
+    ctx.fillRect(x+12, y+20, 8, 12);
+    ctx.fillStyle = C.tree;
+    ctx.fillRect(x+4, y+4, 24, 22);
+    ctx.fillStyle = '#3a8a3a';
+    ctx.fillRect(x+8, y+2, 16, 10);
+    ctx.fillStyle = '#5aaa5a';
+    ctx.fillRect(x+8, y+6, 4, 4); ctx.fillRect(x+18, y+10, 4, 4);
+  } else if (t === 6) { // flower
+    ctx.fillStyle = C.flower;
+    ctx.fillRect(x+12, y+8, 8, 8);
+    ctx.fillStyle = '#ffaaee';
+    ctx.fillRect(x+10, y+6, 4, 4); ctx.fillRect(x+18, y+6, 4, 4);
+    ctx.fillRect(x+10, y+16, 4, 4); ctx.fillRect(x+18, y+16, 4, 4);
+    ctx.fillStyle = C.yellow;
+    ctx.fillRect(x+13, y+10, 6, 6);
+    ctx.fillStyle = '#33aa33';
+    ctx.fillRect(x+14, y+20, 4, 10);
+  } else if (t === 9) { // sign
+    ctx.fillStyle = C.wood;
+    ctx.fillRect(x+14, y+16, 4, 14);
+    ctx.fillStyle = '#c8a870';
+    ctx.fillRect(x+6, y+8, 20, 12);
+    ctx.fillStyle = C.black;
+    ctx.fillRect(x+9, y+11, 14, 2); ctx.fillRect(x+9, y+15, 10, 2);
+    // Sparkle sign
+    ctx.fillStyle = C.pink;
+    ctx.fillRect(x+24, y+6, 4, 4); ctx.fillRect(x+4, y+6, 4, 4);
+  }
+}
+
+function drawHouse(tx, ty) {
+  const x = tx * TILE, y = ty * TILE;
+  if (tx % 2 !== 0 || ty % 2 !== 0) return;
+  const hx = tx * TILE, hy = ty * TILE;
+  // Wall
+  ctx.fillStyle = C.wall;
+  ctx.fillRect(hx, hy + TILE, TILE*2, TILE);
+  // Roof
+  ctx.fillStyle = C.roof;
+  ctx.fillRect(hx-4, hy+4, TILE*2+8, TILE);
+  ctx.fillStyle = C.roof2;
+  ctx.fillRect(hx+4, hy+8, TILE*2, 6);
+  // Door
+  ctx.fillStyle = C.door;
+  ctx.fillRect(hx+22, hy+TILE+8, 12, 24);
+  // Window
+  ctx.fillStyle = C.window;
+  ctx.fillRect(hx+6, hy+TILE+10, 12, 10);
+  ctx.fillStyle = '#ffffff55';
+  ctx.fillRect(hx+6, hy+TILE+10, 5, 4);
+  // Chimney
+  ctx.fillStyle = C.stone;
+  ctx.fillRect(hx+48, hy-4, 10, 14);
+  ctx.fillStyle = '#99999988';
+  ctx.fillRect(hx+50, hy-2, 6, 4);
+}
+
+// Load player character image
+const playerImg = new Image();
+playerImg.src = 'character.png'; // Ganti dengan URL gambar karakter pixel favoritmu
+let playerImgLoaded = false;
+playerImg.onload = () => { playerImgLoaded = true; };
+
+function drawPlayer() {
+  const x = player.px, y = player.py;
+  const bob = Math.sin(player.frame * Math.PI / 2) * 2;
+
+  // Shadow
+  ctx.fillStyle = '#00000044';
+  ctx.beginPath();
+  ctx.ellipse(x + TILE/2, y + TILE - 3, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (playerImgLoaded) {
+    // Flip horizontally if facing left
+    ctx.save();
+    if (player.dir === 'left') {
+      ctx.translate(x + TILE, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(playerImg, 0, y - 18 + bob, TILE, TILE + 20);
+    } else {
+      ctx.drawImage(playerImg, x, y - 18 + bob, TILE, TILE + 20);
+    }
+    ctx.restore();
+  } else {
+    // Fallback pixel character while image loads
+    ctx.fillStyle = '#ff6fa8';
+    ctx.fillRect(x+10, y+14+bob, 12, 14);
+    ctx.fillStyle = '#ffdab9';
+    ctx.fillRect(x+8, y+2+bob, 16, 14);
+    ctx.fillStyle = '#4a3000';
+    ctx.fillRect(x+6, y+bob, 20, 8);
+  }
+}
+
+function drawNPC(npc) {
+  const x = npc.tx * TILE, y = npc.ty * TILE;
+  const bob = Math.sin(Date.now() / 400 + npc.tx) * 2;
+  ctx.font = '22px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(npc.emoji, x + TILE/2, y + TILE/2 + bob);
+  // Name tag
+  ctx.fillStyle = '#1a0a2ecc';
+  ctx.fillRect(x-10, y-16, TILE+20, 14);
+  ctx.fillStyle = '#ffb7d5';
+  ctx.font = '5px "Press Start 2P", monospace';
+  ctx.fillText(npc.name, x + TILE/2, y - 6);
+  // Talk bubble indicator
+  const dx = Math.abs(npc.tx - player.tx), dy = Math.abs(npc.ty - player.ty);
+  if (dx + dy <= 1.5) {
+    ctx.fillStyle = C.pink;
+    ctx.font = '8px serif';
+    ctx.fillText('💬', x + TILE/2, y - 20 + bob);
+  }
+}
+
+function drawItem(it) {
+  if (it.collected) return;
+  const x = it.tx * TILE, y = it.ty * TILE;
+  const bob = Math.sin(Date.now() / 350 + it.tx * 3) * 3;
+  ctx.font = '18px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(it.emoji, x + TILE/2, y + TILE/2 + bob);
+  // Glow
+  ctx.fillStyle = '#ffff0033';
+  ctx.fillRect(x+4, y+4, TILE-8, TILE-8);
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw tiles
+  for (let ty = 0; ty < ROWS; ty++) {
+    for (let tx = 0; tx < COLS; tx++) {
+      drawTile(tx, ty);
+    }
+  }
+
+  // Draw houses
+  const housePairs = [[2,2],[2,11],[8,2],[8,11]];
+  for (const [hr, hc] of housePairs) {
+    drawHouse(hc, hr);
+  }
+
+  // Draw items
+  for (const it of items) drawItem(it);
+
+  // Draw NPCs
+  ctx.save();
+  for (const npc of NPCS) drawNPC(npc);
+  ctx.restore();
+
+  // Draw player (on top)
+  drawPlayer();
+
+  // Vignette overlay
+  const vg = ctx.createRadialGradient(256, 192, 80, 256, 192, 280);
+  vg.addColorStop(0, 'transparent');
+  vg.addColorStop(1, '#1a0a2e44');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+</script>
+</body>
+</html>
